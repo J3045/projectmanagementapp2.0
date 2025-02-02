@@ -7,7 +7,7 @@ import { useEffect } from "react";
 import { api } from "~/utils/api";
 
 export default function Home() {
-  const hello = api.post.hello.useQuery({ text: "from tRPC" });
+  // const hello = api.post.hello.useQuery({ text: "from tRPC" });
 
   return (
     <>
@@ -46,9 +46,9 @@ export default function Home() {
             </Link>
           </div>
           <div className="flex flex-col items-center gap-2">
-            <p className="text-2xl text-white">
+            {/* <p className="text-2xl text-white">
               {hello.data ? hello.data.greeting : "Loading tRPC query..."}
-            </p>
+            </p> */}
             <AuthShowcase />
           </div>
         </div>
@@ -61,30 +61,26 @@ function AuthShowcase() {
   const { data: sessionData } = useSession();
   const router = useRouter();
 
-  const { data: secretMessage } = api.post.getSecretMessage.useQuery(
-    undefined, // no input
-    { enabled: sessionData?.user !== undefined }
-  );
-
-  // Redirect to dashboard after successful sign-in
   useEffect(() => {
-    if (sessionData && router.pathname !== "/dashboard") {
-      router.push("/dashboard");
+    if (sessionData) {
+      router.replace("/dashboard"); // Use replace to prevent going back to the login page
     }
   }, [sessionData, router]);
+  
 
   return (
     <div className="flex flex-col items-center justify-center gap-4">
       <p className="text-center text-2xl text-white">
         {sessionData && <span>Logged in as {sessionData.user?.name}</span>}
-        {secretMessage && <span> - {secretMessage}</span>}
       </p>
       <button
-        className="rounded-full bg-white/10 px-10 py-3 font-semibold text-white no-underline transition hover:bg-white/20"
-        onClick={sessionData ? () => void signOut() : () => void signIn()}
-      >
-        {sessionData ? "Sign out" : "Sign in"}
-      </button>
+  className="rounded-full bg-white/10 px-10 py-3 font-semibold text-white no-underline transition hover:bg-white/20"
+  onClick={() => sessionData ? signOut() : signIn()}
+>
+  {sessionData ? "Sign out" : "Sign in"}
+</button>
+
     </div>
   );
 }
+

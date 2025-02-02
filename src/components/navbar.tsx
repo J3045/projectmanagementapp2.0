@@ -14,7 +14,11 @@ const Navbar = () => {
     "/settings": "Settings",
   };
 
-  const currentPage = pageTitles[router.pathname] || "Your App";
+  // Dynamic path check for individual projects
+  const isProjectPage = router.pathname.startsWith("/projects/");
+  const currentPage = isProjectPage
+    ? "Project Details" // You can customize this title for project pages
+    : pageTitles[router.pathname] || "Your App";
 
   return (
     <motion.nav
@@ -29,13 +33,18 @@ const Navbar = () => {
       <div className="flex items-center gap-6">
         {session && (
           <div className="flex items-center gap-4">
-            {/* User Profile Image */}
-            {session.user.image && (
+            {/* User Profile Image or Default Image */}
+            {session.user.image ? (
               <img
                 src={session.user.image}
                 alt="User Profile"
                 className="w-10 h-10 rounded-full border-2 border-gray-300 shadow-md"
               />
+            ) : (
+              // Show default icon or avatar if no profile image
+              <div className="w-10 h-10 bg-gray-300 rounded-full flex items-center justify-center">
+                <span className="text-white font-medium">{session.user.name?.[0]}</span>
+              </div>
             )}
 
             {/* User Name */}
