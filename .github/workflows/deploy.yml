@@ -34,15 +34,15 @@ jobs:
       # Deploy to SST (AWS)
       - name: Deploy to AWS with SST
         env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_ACCESS_KEY_ID: ${{ Secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ Secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_REGION: 'us-east-1'
-          NEXTAUTH_URL: ${{ secrets.NEXTAUTH_URL }}
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
-          AUTH_SECRET: ${{ secrets.AUTH_SECRET }}
-          AUTH_DISCORD_ID: ${{ secrets.AUTH_DISCORD_ID }}
-          AUTH_DISCORD_SECRET: ${{ secrets.AUTH_DISCORD_SECRET }}
-          DIRECT_URL: ${{ secrets.DIRECT_URL }} # Add the DIRECT_URL variable here
+          NEXTAUTH_URL: ${{ Secrets.NEXTAUTH_URL }}
+          DATABASE_URL: ${{ Secrets.DATABASE_URL }}
+          AUTH_SECRET: ${{ Secrets.AUTH_SECRET }}
+          AUTH_DISCORD_ID: ${{ Secrets.AUTH_DISCORD_ID }}
+          AUTH_DISCORD_SECRET: ${{ Secrets.AUTH_DISCORD_SECRET }}
+          DIRECT_URL: ${{ Secrets.DIRECT_URL }} # Add the DIRECT_URL variable here
         run: |
           # Install SST globally
           npm install -g sst
