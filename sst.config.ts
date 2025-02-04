@@ -1,6 +1,17 @@
 import * as sst from "@serverless-stack/resources"; // For SST v1
 
-export default class MyStack extends sst.Stack {
+export default function main(app: sst.App) {
+  // Add default function props or other global settings
+  app.setDefaultFunctionProps({
+    runtime: "nodejs18.x",
+  });
+
+  // Add your stack here
+  app.stack(MyStack);
+}
+
+// Create the stack for the Next.js site
+class MyStack extends sst.Stack {
   constructor(scope: sst.App, id: string) {
     super(scope, id);
 
