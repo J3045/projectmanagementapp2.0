@@ -1,0 +1,6 @@
+{
+    "name": "projectmanagementapp",
+    "main": "sst.config.ts",
+    "telemetry": false
+  }
+  
