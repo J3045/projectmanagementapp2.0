@@ -1,12 +1,9 @@
-import { App, StackContext, NextjsSite } from "@serverless-stack/resources"; // For SST v2
+import * as sst from "@serverless-stack/resources";
 
-export default function main(app: App) {
-  // Set the region to ap-south-1
+export default function main(app: sst.App) {
+  // Add default function props or other global settings
   app.setDefaultFunctionProps({
-    runtime: "nodejs16.x", // Now supported in SST v2
-    environment: {
-      AWS_REGION: "ap-south-1",
-    },
+    runtime: "nodejs18.x", // Use Node.js 18 runtime
   });
 
   // Add your stack here
@@ -14,9 +11,9 @@ export default function main(app: App) {
 }
 
 // Create the stack for the Next.js site
-function MyStack({ stack }: StackContext) {
+function MyStack({ stack }: sst.StackContext) {
   // Create the Next.js site
-  const site = new NextjsSite(stack, "site", {
+  const site = new sst.NextjsSite(stack, "site", {
     path: ".", // Point to the current directory where your Next.js app resides
     environment: {
       DATABASE_URL: process.env.DATABASE_URL!,
