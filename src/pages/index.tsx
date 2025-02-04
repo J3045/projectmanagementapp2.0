@@ -4,8 +4,6 @@ import Link from "next/link";
 import { useRouter } from "next/router";
 import { useEffect } from "react";
 
-import { api } from "~/utils/api";
-
 export default function Home() {
   // const hello = api.post.hello.useQuery({ text: "from tRPC" });
 
@@ -63,7 +61,7 @@ function AuthShowcase() {
 
   useEffect(() => {
     if (sessionData) {
-      router.replace("/dashboard"); // Use replace to prevent going back to the login page
+      void router.replace("/dashboard") // Use replace to prevent going back to the login page
     }
   }, [sessionData, router]);
   

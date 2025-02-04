@@ -40,7 +40,7 @@ export const authConfig = {
 
         const user = await db.user.findUnique({ where: { email } });
 
-        if (!user || !user.hashedPassword) {
+        if (!user?.hashedPassword) {
           throw new Error("Invalid email or password");
         }
 
@@ -64,19 +64,21 @@ export const authConfig = {
       if (user) {
         token.id = user.id;
         token.email = user.email;
-        
       }
       console.log("JWT callback:", { token, user });
       return token;
-    },
+    }
+    ,
     async session({ session, token }) {
-      if (token) {
-        session.user.id = token.id as string;
-        session.user.email = token.email as string;
+      if (token && token.id && token.email) {
+        session.user.id = token?.id as string;
+        session.user.email = token?.email as string;
+
       }
       console.log("Session callback:", { session, token });
       return session;
-    },
+    }
+    
    
   },
   

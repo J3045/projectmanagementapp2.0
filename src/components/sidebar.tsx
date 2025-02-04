@@ -6,6 +6,11 @@ import { useRouter } from "next/router";
 import { api } from "~/utils/api"; // Import trpc hook for fetching data
 import { FaSpinner } from 'react-icons/fa'; // You can use any spinner icon here
 
+interface Project {
+  id: number;
+  name: string;
+}
+
 const Sidebar = () => {
   const [expanded, setExpanded] = useState(true); // For the sidebar expansion
   const [projectsOpen, setProjectsOpen] = useState(false); // State for toggling the "Projects" submenu
@@ -95,9 +100,9 @@ const Sidebar = () => {
             {/* Dynamic Sub-links for "Projects" */}
             {name === "Projects" && expanded && projectsOpen && (
               <div className="pl-8 mt-2 space-y-2">
-                {projects?.map((project: any) => (
+                {projects?.map((project: Project) => (
                   <Link
-                    key={project.project_id}
+                    key={project.id} // Ensure unique key with 'id'
                     href={`/projects/${project.id}`}
                     className={`block p-2 rounded-lg transition-all ${
                       router.pathname === `/projects/${project.id}`
@@ -105,7 +110,7 @@ const Sidebar = () => {
                         : "hover:bg-gray-700 text-white" // Default text color for unselected
                     }`}
                   >
-                    {project.name} {/* Assuming the name is project.project_name */}
+                    {project.name} {/* Assuming the name is project.name */}
                   </Link>
                 ))}
               </div>

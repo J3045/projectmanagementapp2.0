@@ -1,7 +1,6 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useState } from "react"; // Removed useEffect since it's unused
 import { useSession, signOut } from "next-auth/react";
-import { useRouter } from "next/navigation";
 import Layout from "../components/Layout";
 import AddProjectForm from "~/components/AddProjectForm";
 import AddTaskModal from "~/components/AddTaskModal";
@@ -9,17 +8,17 @@ import { api } from "~/utils/api";
 import { type Task, TaskStatus } from "@prisma/client";
 
 const Dashboard = () => {
-  const { data: session, status } = useSession();
-  const router = useRouter();
+  const { data: session } = useSession(); // Removed `status` since it's unused
   const [showModal, setShowModal] = useState(false);
   const [selectedProject, setSelectedProject] = useState<number | null>(null);
   const [showTaskModal, setShowTaskModal] = useState(false);
 
   // Fetch projects using tRPC
-  const { data: projects, isLoading, isError, refetch } = api.project.getAllProjects.useQuery();
+  const { data: projects, isError, refetch } = api.project.getAllProjects.useQuery();
+  // Removed `isLoading` since it's unused
 
   const handleSignOut = () => {
-    signOut({ callbackUrl: "/auth/signin" });
+    void signOut({ callbackUrl: "/auth/signin" }); // Fixed: Handled async promise
   };
 
   // Function to determine project status based on tasks
@@ -28,10 +27,9 @@ const Dashboard = () => {
     const allCompleted = tasks.every(
       (task) => task.status !== null && task.status === TaskStatus.COMPLETED
     );
-    
+
     return allCompleted ? "Completed" : "In Progress";
   };
-
 
   if (isError) {
     return <div>Error fetching projects. Please try again later.</div>;
@@ -46,7 +44,7 @@ const Dashboard = () => {
             <p className="text-2xl font-semibold text-gray-700">
               Welcome back, <span className="text-blue-600">{session?.user?.name}</span>!
             </p>
-            <p className="text-lg text-gray-500">Here's your dashboard overview</p>
+            <p className="text-lg text-gray-500">Here&apos;s your dashboard overview</p> {/* Fixed apostrophe */}
           </div>
           <button
             onClick={handleSignOut}
@@ -128,12 +126,12 @@ const Dashboard = () => {
 
       {/* Task Modal */}
       {showTaskModal && selectedProject && (
-  <AddTaskModal
-    projectId={selectedProject}
-    onClose={() => setShowTaskModal(false)}
-    refetchTasks={refetch}  // Pass the project refetch function
-  />
-)}
+        <AddTaskModal
+          projectId={selectedProject}
+          onClose={() => setShowTaskModal(false)}
+          refetchTasks={refetch} // Pass the project refetch function
+        />
+      )}
     </Layout>
   );
 };

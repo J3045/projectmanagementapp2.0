@@ -3,6 +3,7 @@ import { FaTimes } from "react-icons/fa"; // Import close icon
 import { api } from "~/utils/api"; // Corrected import for API from utils
 import { TaskStatus, TaskPriority } from "@prisma/client"; // Import enums
 import Select from "react-select"; // Import react-select
+import { MultiValue } from "react-select"
 
 interface AddTaskModalProps {
   projectId: number;
@@ -37,20 +38,24 @@ const AddTaskModal = ({ projectId, onClose, refetchTasks }: AddTaskModalProps) =
     label: user.name ?? "Unnamed User", // Fallback for null names
   }));
 
-  // Handle user selection change
-  const handleUserChange = (selectedOptions: any) => {
-    setAssignedUserIds(selectedOptions.map((option: any) => option.value));
-  };
-
+  interface UserOption {
+    value: string;
+    label: string;
+  }
+  
+ 
+const handleUserChange = (selectedOptions: MultiValue<{ value: string; label: string }>) => {
+  setAssignedUserIds(selectedOptions.map((option) => option.value));
+};
   // Mutation for creating task
-  const { mutate, error } = api.task.createTask.useMutation({
+  const { mutate } = api.task.createTask.useMutation({
     onSuccess: () => {
-      onClose(); // Close modal after submitting
-      refetchTasks(); // Refetch tasks in the dashboard
+      onClose();
+      refetchTasks();
     },
     onError: (err) => {
       console.error("Error creating task:", err);
-      alert(`Error creating task: ${err.message}`); // Show error to user
+      alert(`Error creating task: ${err.message}`);
     },
   });
 
@@ -86,16 +91,16 @@ const AddTaskModal = ({ projectId, onClose, refetchTasks }: AddTaskModalProps) =
     }
   };
 
-  const handleSubmit = async () => {
+  const handleSubmit = () => {
     try {
-      await mutate({
+      mutate({
         title,
         description,
         projectId,
         assignedUserIds,
         dueDate,
-        status: status ?? undefined, // Ensure status is not null
-        priority: priority ?? undefined, // Ensure priority is not null
+        status: status ?? undefined,
+        priority: priority ?? undefined,
         tags,
         startDate,
         points,
@@ -150,7 +155,7 @@ const AddTaskModal = ({ projectId, onClose, refetchTasks }: AddTaskModalProps) =
             <div className="flex items-center space-x-2">
               <select
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                value={status || ""}
+                value={status ?? ""}
                 onChange={(e) => setStatus(e.target.value as TaskStatus)}
               >
                 <option value="">Select Status</option>
@@ -174,7 +179,7 @@ const AddTaskModal = ({ projectId, onClose, refetchTasks }: AddTaskModalProps) =
             <input
               type="date"
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-              value={dueDate?.toISOString().split("T")[0] || ""}
+              value={dueDate?.toISOString().split("T")[0] ?? ""}
               onChange={(e) => setDueDate(new Date(e.target.value))}
             />
           </div>
@@ -185,7 +190,7 @@ const AddTaskModal = ({ projectId, onClose, refetchTasks }: AddTaskModalProps) =
             <div className="flex items-center space-x-2">
               <select
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                value={priority || ""}
+                value={priority ?? ""}
                 onChange={(e) => setPriority(e.target.value as TaskPriority)}
               >
                 <option value="">Select Priority</option>
@@ -208,7 +213,7 @@ const AddTaskModal = ({ projectId, onClose, refetchTasks }: AddTaskModalProps) =
             <label className="block text-gray-700 font-medium">Points</label>
             <select
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-              value={points || ""}
+              value={points ?? ""}
               onChange={(e) => setPoints(Number(e.target.value))}
             >
               <option value="">Select Points</option>

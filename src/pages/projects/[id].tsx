@@ -49,10 +49,10 @@ const ProjectPage = () => {
         }))
       );
     }
-    if (projectError || tasksError) {
+    if (projectError ?? tasksError) {
       setError("Error loading project or tasks");
     }
-    setLoading(projectLoading || tasksLoading);
+    setLoading(projectLoading ?? tasksLoading);
   }, [fetchedTasks, projectLoading, tasksLoading, projectError, tasksError]);
 
   if (loading) return <div className="text-center text-lg font-semibold">Loading...</div>;
@@ -62,7 +62,7 @@ const ProjectPage = () => {
   // Group tasks by status
   const groupedTasks = tasks.reduce<Record<TaskStatus, Task[]>>(
     (acc, task) => {
-      acc[task.status] = acc[task.status] || [];
+      acc[task.status] = acc[task.status] ?? [];
       acc[task.status].push(task);
       return acc;
     },
@@ -92,7 +92,7 @@ const ProjectPage = () => {
         >
           {project.name}
         </motion.h1>
-        <p className="mb-6 text-gray-600">{project.description || "No description available"}</p>
+        <p className="mb-6 text-gray-600">{project.description ?? "No description available"}</p>
 
         <div className="flex space-x-6 overflow-x-auto pb-4">
           {statuses.map((status) => (
@@ -118,14 +118,14 @@ const ProjectPage = () => {
                     >
                       <h4 className="font-medium text-gray-800">{task.title}</h4>
                       <p className="text-sm text-gray-600">
-                        {task.description || "No description available"}
+                        {task.description ?? "No description available"}
                       </p>
                       <div className="text-xs text-gray-500 mt-2">
                         <strong>Assigned to:</strong>
                         <ul>
                           {task.assignedUsers.map((user) => (
                             <li key={user.id} className="text-gray-700">
-                              {user.name || "Unknown"}
+                              {user.name ?? "Unknown"}
                             </li>
                           ))}
                         </ul>

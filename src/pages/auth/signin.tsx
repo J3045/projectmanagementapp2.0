@@ -3,6 +3,7 @@ import { useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { FaDiscord } from "react-icons/fa";
+import Link from "next/link";
 
 export default function SignInPage() {
   const [email, setEmail] = useState("");
@@ -79,12 +80,13 @@ export default function SignInPage() {
         </form>
 
         <div className="mt-6 text-center">
-          <p className="text-gray-600">
-            Don't have an account?{" "}
-            <a href="/auth/signup" className="text-blue-600 hover:underline">
-              Sign Up
-            </a>
-          </p>
+        <p className="text-gray-600">
+  Don&apos;t have an account?{" "}
+  <Link href="/auth/signup" className="text-blue-600 hover:underline">
+    Sign Up
+  </Link>
+</p>
+
         </div>
 
         <div className="mt-6">

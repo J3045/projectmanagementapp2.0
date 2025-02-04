@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "~/utils/api";
+import Link from "next/link"; // Import next/link
 
 export default function SignupPage() {
   const [name, setName] = useState("");
@@ -68,12 +69,15 @@ export default function SignupPage() {
             {signupMutation.isPending ? "Signing up..." : "Sign Up"}
           </button>
         </form>
-        <p className="mt-6 text-center text-gray-600">
-          Already have an account?{" "}
-          <a href="/auth/signin" className="text-blue-600 hover:underline">
-            Sign In
-          </a>
-        </p>
+        
+
+<p className="mt-6 text-center text-gray-600">
+  Already have an account?{" "}
+  <Link href="/auth/signin" className="text-blue-600 hover:underline">
+    Sign In
+  </Link>
+</p>
+
       </div>
     </div>
   );
