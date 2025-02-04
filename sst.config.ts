@@ -1,9 +1,12 @@
 import * as sst from "@serverless-stack/resources"; // For SST v1
 
 export default function main(app: sst.App) {
-  // Add default function props or other global settings
+  // Set the region to ap-south-1
   app.setDefaultFunctionProps({
     runtime: "nodejs16.x", // Correct runtime version
+    environment: {
+      AWS_REGION: "ap-south-1", // Explicitly setting the region
+    },
   });
 
   // Add your stack here
