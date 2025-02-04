@@ -3,7 +3,7 @@ import * as sst from "@serverless-stack/resources";
 export default function main(app: sst.App) {
   // Add default function props or other global settings
   app.setDefaultFunctionProps({
-    runtime: "nodejs18.x", // Use Node.js 18 runtime
+    runtime: "nodejs16.x", // Use Node.js 18 runtime
   });
 
   // Add your stack here
