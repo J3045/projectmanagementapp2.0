@@ -34,7 +34,7 @@ const AddTaskModal = ({ projectId, onClose, refetchTasks }: AddTaskModalProps) =
   // Prepare user options for react-select
   const userOptions = users.map((user) => ({
     value: user.id,
-    label: user.name || "Unnamed User", // Fallback for null names
+    label: user.name ?? "Unnamed User", // Fallback for null names
   }));
 
   // Handle user selection change
@@ -94,8 +94,8 @@ const AddTaskModal = ({ projectId, onClose, refetchTasks }: AddTaskModalProps) =
         projectId,
         assignedUserIds,
         dueDate,
-        status: status || undefined, // Ensure status is not null
-        priority: priority || undefined, // Ensure priority is not null
+        status: status ?? undefined, // Ensure status is not null
+        priority: priority ?? undefined, // Ensure priority is not null
         tags,
         startDate,
         points,
@@ -226,7 +226,7 @@ const AddTaskModal = ({ projectId, onClose, refetchTasks }: AddTaskModalProps) =
             <input
               type="date"
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-              value={startDate?.toISOString().split("T")[0] || ""}
+              value={startDate?.toISOString().split("T")[0] ?? ""}
               onChange={(e) => setStartDate(new Date(e.target.value))}
             />
           </div>

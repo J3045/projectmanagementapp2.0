@@ -27,7 +27,10 @@
     "baseUrl": ".",
     "paths": {
       "~/*": ["./src/*"]
-    }
+    },
+
+    /* ✅ Add SST Types */
+    "types": ["@types/node", "sst"]
   },
   "include": [
     ".eslintrc.cjs",
@@ -36,7 +39,8 @@
     "**/*.tsx",
     "**/*.cjs",
     "**/*.js",
-    ".next/types/**/*.ts"
+    ".next/types/**/*.ts",
+    "sst.config.ts"  // ✅ Include SST config
   ],
   "exclude": ["node_modules"]
 }
