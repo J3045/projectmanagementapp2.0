@@ -1,0 +1,27 @@
+[2025-02-04T16:58:47.262] [DEBUG] default - SST: 1.18.4
+[2025-02-04T16:58:47.263] [DEBUG] default - CDK: 2.50.0
+[2025-02-04T16:59:25.946] [DEBUG] aws-auth - Determining if we're on an EC2 instance.
+[2025-02-04T16:59:26.923] [DEBUG] aws-auth - Does not look like an EC2 instance.
+[2025-02-04T16:59:27.471] [INFO] default - Using stage: AKIA3RYC5U5KUOFKIAUD
+[2025-02-04T16:59:27.473] [INFO] client - 
+[2025-02-04T16:59:27.748] [DEBUG] default - SubscriptionRequiredException: The AWS Access Key Id needs a subscription for the service
+    at Request.extractError (D:\EasySLR_4\projectmanagementapp\node_modules\aws-sdk\lib\protocol\json.js:80:27)
+    at Request.callListeners (D:\EasySLR_4\projectmanagementapp\node_modules\aws-sdk\lib\sequential_executor.js:106:20)
+    at Request.emit (D:\EasySLR_4\projectmanagementapp\node_modules\aws-sdk\lib\sequential_executor.js:78:10)
+    at Request.emit (D:\EasySLR_4\projectmanagementapp\node_modules\aws-sdk\lib\request.js:686:14)
+    at Request.transition (D:\EasySLR_4\projectmanagementapp\node_modules\aws-sdk\lib\request.js:22:10)
+    at AcceptorStateMachine.runTo (D:\EasySLR_4\projectmanagementapp\node_modules\aws-sdk\lib\state_machine.js:14:12)
+    at D:\EasySLR_4\projectmanagementapp\node_modules\aws-sdk\lib\state_machine.js:26:10
+    at Request.<anonymous> (D:\EasySLR_4\projectmanagementapp\node_modules\aws-sdk\lib\request.js:38:9)
+    at Request.<anonymous> (D:\EasySLR_4\projectmanagementapp\node_modules\aws-sdk\lib\request.js:688:12)
+    at Request.callListeners (D:\EasySLR_4\projectmanagementapp\node_modules\aws-sdk\lib\sequential_executor.js:116:18) {
+  code: 'SubscriptionRequiredException',
+  '[__type]': 'See error.__type for details.',
+  time: 2025-02-04T11:29:27.747Z,
+  requestId: 'e6756417-999e-4b2d-ab6e-de8cc3bf16b3',
+  statusCode: 400,
+  retryable: false,
+  retryDelay: 99.38554998302563
+}
+[2025-02-04T16:59:27.759] [INFO] default - 
+[2025-02-04T16:59:27.759] [ERROR] default - The AWS Access Key Id needs a subscription for the service
