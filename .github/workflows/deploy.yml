@@ -57,7 +57,7 @@ jobs:
       # Deploy to SST (AWS) - Skip linting here
       - name: Deploy to AWS with SST
         run: |
-          npm install serverless-stack --save-dev --force
+          npm install sst --force
           npx sst deploy --stage prod --region ap-south-1
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
