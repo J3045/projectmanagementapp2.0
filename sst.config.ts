@@ -1,4 +1,4 @@
-import { App } from "@serverless-stack/resources";
+import { App, Stack } from "@serverless-stack/resources";
 import { NextjsSite } from "@serverless-stack/resources";
 
 export default {
@@ -9,7 +9,7 @@ export default {
     };
   },
   stacks(app: App) {
-    app.stack(function Site({ stack }) {
+    app.stack(function Site({ stack }: { stack: Stack }) {
       const site = new NextjsSite(stack, "site", {
         path: ".", // Path of your Next.js app
         environment: {
@@ -21,7 +21,7 @@ export default {
           DIRECT_URL: process.env.DIRECT_URL || "",
         },
         lambda: {
-          runtime: "nodejs18.x", // Set runtime to a supported version like nodejs16.x
+          runtime: "nodejs18.x", // Set runtime to nodejs18.x for compatibility
         },
       });
 
