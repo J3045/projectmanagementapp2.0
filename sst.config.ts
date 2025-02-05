@@ -11,7 +11,7 @@ export default {
   stacks(app: App) {
     app.stack(function Site({ stack }) {
       const site = new NextjsSite(stack, "site", {
-        path: ".", // Specify the path of your Next.js application
+        path: ".", // Path of your Next.js app
         environment: {
           NEXTAUTH_URL: process.env.NEXTAUTH_URL || "",
           DATABASE_URL: process.env.DATABASE_URL || "",
@@ -19,6 +19,9 @@ export default {
           AUTH_DISCORD_ID: process.env.AUTH_DISCORD_ID || "",
           AUTH_DISCORD_SECRET: process.env.AUTH_DISCORD_SECRET || "",
           DIRECT_URL: process.env.DIRECT_URL || "",
+        },
+        lambda: {
+          runtime: "nodejs18.x", // Set runtime to a supported version like nodejs16.x
         },
       });
 
