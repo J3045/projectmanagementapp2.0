@@ -22,9 +22,6 @@ export default {
         },
       });
 
-      // Explicitly define runtime for the Lambda function
-      site.lambdaRuntime("nodejs18.x");
-
       stack.addOutputs({
         SiteUrl: site.url,
       });
