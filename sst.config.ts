@@ -1,3 +1,4 @@
+import { App } from "@serverless-stack/resources";
 import { NextjsSite } from "@serverless-stack/resources";
 
 export default {
@@ -7,7 +8,7 @@ export default {
       region: "ap-south-1",
     };
   },
-  stacks(app) {
+  stacks(app: App) { // Typing 'app' as App
     app.stack(function Site({ stack }) {
       const site = new NextjsSite(stack, "site", {
         environment: {
