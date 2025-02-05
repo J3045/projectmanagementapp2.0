@@ -1,32 +1,29 @@
-import * as sst from "@serverless-stack/resources";
+import { SSTConfig } from "sst";
+import { NextjsSite } from "sst/constructs";
 
-export default function main(app: sst.App) {
-  // Add default function props or other global settings
-  app.setDefaultFunctionProps({
-    runtime: "nodejs16.x", // Use Node.js 18 runtime
-  });
+export default {
+  config(_input) {
+    return {
+      name: "projectmanagementapp",
+      region: "ap-south-1",
+    };
+  },
+  stacks(app) {
+    app.stack(function Site({ stack }) {
+      const site = new NextjsSite(stack, "site", {
+        environment: {
+          NEXTAUTH_URL: process.env.NEXTAUTH_URL || "",
+          DATABASE_URL: process.env.DATABASE_URL || "",
+          AUTH_SECRET: process.env.AUTH_SECRET || "",
+          AUTH_DISCORD_ID: process.env.AUTH_DISCORD_ID || "",
+          AUTH_DISCORD_SECRET: process.env.AUTH_DISCORD_SECRET || "",
+          DIRECT_URL: process.env.DIRECT_URL || "",
+        },
+      });
 
-  // Add your stack here
-  app.stack(MyStack);
-}
-
-// Create the stack for the Next.js site
-function MyStack({ stack }: sst.StackContext) {
-  // Create the Next.js site
-  const site = new sst.NextjsSite(stack, "site", {
-    path: ".", // Point to the current directory where your Next.js app resides
-    environment: {
-      DATABASE_URL: process.env.DATABASE_URL!,
-      DIRECT_URL: process.env.DIRECT_URL!,
-      NEXTAUTH_URL: process.env.NEXTAUTH_URL!,
-      AUTH_SECRET: process.env.AUTH_SECRET!,
-      AUTH_DISCORD_ID: process.env.AUTH_DISCORD_ID!,
-      AUTH_DISCORD_SECRET: process.env.AUTH_DISCORD_SECRET!,
-    },
-  });
-
-  // Add output for the site URL
-  stack.addOutputs({
-    SiteUrl: site.url,
-  });
-}
+      stack.addOutputs({
+        SiteUrl: site.url,
+      });
+    });
+  },
+} satisfies SSTConfig;
