@@ -1,10 +1,10 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Home, LayoutGrid, Settings, Users, ChevronLeft, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { api } from "~/utils/api"; // Import trpc hook for fetching data
 import { FaSpinner } from 'react-icons/fa'; // You can use any spinner icon here
+import { FaHome, FaTh, FaUsers, FaCog, FaChevronLeft, FaChevronRight } from 'react-icons/fa'; // Import icons from react-icons
 
 interface Project {
   id: number;
@@ -20,10 +20,10 @@ const Sidebar = () => {
   const { data: projects, isLoading, error } = api.project.getAllProjects.useQuery();
 
   const menuItems = [
-    { name: "Dashboard", icon: <Home />, href: "/dashboard" },
-    { name: "Projects", icon: <LayoutGrid />, href: "/projects" },
-    { name: "Teams", icon: <Users />, href: "/teams" },
-    { name: "Settings", icon: <Settings />, href: "/settings" },
+    { name: "Dashboard", icon: <FaHome />, href: "/dashboard" },
+    { name: "Projects", icon: <FaTh />, href: "/projects" },
+    { name: "Teams", icon: <FaUsers />, href: "/teams" },
+    { name: "Settings", icon: <FaCog />, href: "/settings" },
   ];
 
   // Loading state
@@ -63,7 +63,7 @@ const Sidebar = () => {
         onClick={() => setExpanded(!expanded)}
         className="mb-6 p-2 rounded-lg bg-gray-800 hover:bg-gray-700 flex items-center justify-center"
       >
-        {expanded ? <ChevronLeft size={24} /> : <ChevronRight size={24} />}
+        {expanded ? <FaChevronLeft size={24} /> : <FaChevronRight size={24} />}
       </button>
 
       {/* Navigation Links */}
