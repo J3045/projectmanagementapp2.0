@@ -1,4 +1,4 @@
-import { NextjsSite } from "sst/constructs";
+import { NextjsSite } from "@serverless-stack/resources";
 
 export default {
   config(_input) {
