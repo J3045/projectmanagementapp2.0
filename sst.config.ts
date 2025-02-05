@@ -20,9 +20,6 @@ export default {
           AUTH_DISCORD_SECRET: process.env.AUTH_DISCORD_SECRET || "",
           DIRECT_URL: process.env.DIRECT_URL || "",
         },
-        lambda: {
-          runtime: "nodejs18.x", // Set runtime to nodejs18.x for compatibility
-        },
       });
 
       stack.addOutputs({
