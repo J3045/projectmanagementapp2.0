@@ -1,5 +1,5 @@
 import { PrismaAdapter } from "@auth/prisma-adapter"; 
-import { type DefaultSession, type NextAuthOptions } from "next-auth"; // Import NextAuthOptions instead
+import { type DefaultSession, type NextAuthConfig } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import DiscordProvider from "next-auth/providers/discord";
 import { db } from "~/server/db";
@@ -14,7 +14,7 @@ declare module "next-auth" {
   }
 }
 
-export const authConfig: NextAuthOptions = {  // Use NextAuthOptions here
+export const authConfig = {
   adapter: PrismaAdapter(db),
   session: {
     strategy: "jwt", // Store sessions in the database
@@ -58,7 +58,7 @@ export const authConfig: NextAuthOptions = {  // Use NextAuthOptions here
       },
     }),
   ],
-
+  
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
@@ -67,19 +67,23 @@ export const authConfig: NextAuthOptions = {  // Use NextAuthOptions here
       }
       console.log("JWT callback:", { token, user });
       return token;
-    },
+    }
+    ,
     async session({ session, token }) {
       if (token && token.id && token.email) {
         session.user.id = token?.id as string;
         session.user.email = token?.email as string;
+
       }
       console.log("Session callback:", { session, token });
       return session;
-    },
+    }
+    
+   
   },
-
+  
   pages: {
     signIn: "/auth/signin",
   },
   secret: process.env.AUTH_SECRET,
-};
+} satisfies NextAuthConfig;
