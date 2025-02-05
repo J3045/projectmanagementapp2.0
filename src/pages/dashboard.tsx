@@ -1,6 +1,9 @@
 "use client";
-import { useState } from "react"; // Removed useEffect since it's unused
-import { useSession, signOut } from "next-auth/react";
+
+import { useState } from "react";
+import { useSession } from "next-auth/react";
+import { motion } from "framer-motion";
+import { useRouter } from "next/navigation";
 import Layout from "../components/Layout";
 import AddProjectForm from "~/components/AddProjectForm";
 import AddTaskModal from "~/components/AddTaskModal";
@@ -8,118 +11,115 @@ import { api } from "~/utils/api";
 import { type Task, TaskStatus } from "@prisma/client";
 
 const Dashboard = () => {
-  const { data: session } = useSession(); // Removed `status` since it's unused
+  const { data: session } = useSession();
+  const router = useRouter();
   const [showModal, setShowModal] = useState(false);
   const [selectedProject, setSelectedProject] = useState<number | null>(null);
   const [showTaskModal, setShowTaskModal] = useState(false);
 
   // Fetch projects using tRPC
   const { data: projects, isError, refetch } = api.project.getAllProjects.useQuery();
-  // Removed `isLoading` since it's unused
-
-  const handleSignOut = () => {
-    void signOut({ callbackUrl: "/auth/signin" }); // Fixed: Handled async promise
-  };
 
   // Function to determine project status based on tasks
   const getProjectStatus = (tasks: Task[]) => {
     if (tasks.length === 0) return "No Tasks";
-    const allCompleted = tasks.every(
-      (task) => task.status !== null && task.status === TaskStatus.COMPLETED
-    );
-
-    return allCompleted ? "Completed" : "In Progress";
+    return tasks.every((task) => task.status === TaskStatus.COMPLETED) ? "Completed" : "In Progress";
   };
 
   if (isError) {
-    return <div>Error fetching projects. Please try again later.</div>;
+    return <div className="text-center text-red-500 font-semibold">Error fetching projects. Please try again later.</div>;
   }
 
   return (
     <Layout>
-      <div className="container mx-auto py-12 px-6">
+      <div className="container mx-auto py-12 px-4">
         {/* Dashboard Header */}
-        <div className="flex justify-between items-center mb-8">
+        <motion.div
+          className="flex justify-between items-center mb-12 p-8 rounded-xl bg-gradient-to-r from-gray-700 via-gray-800 to-gray-900 shadow-lg text-white"
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+        >
           <div>
-            <p className="text-2xl font-semibold text-gray-700">
-              Welcome back, <span className="text-blue-600">{session?.user?.name}</span>!
-            </p>
-            <p className="text-lg text-gray-500">Here&apos;s your dashboard overview</p> {/* Fixed apostrophe */}
+            <h1 className="text-4xl font-bold">
+              Welcome back, <span className="text-indigo-400">{session?.user?.name || "User"}</span>!
+            </h1>
+            <p className="mt-2 text-lg text-gray-300">Track your projects and tasks effortlessly</p>
           </div>
-          <button
-            onClick={handleSignOut}
-            className="bg-red-600 text-white px-6 py-2 rounded-md hover:bg-red-700 transition"
-          >
-            Sign Out
-          </button>
-        </div>
+        </motion.div>
 
-        {/* Button to open Add Project modal */}
-        <div className="mb-6 flex justify-start">
+        {/* Create Project Button */}
+        <motion.div
+          className="mb-8 flex justify-start"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.2 }}
+        >
           <button
             onClick={() => setShowModal(true)}
-            className="bg-blue-600 text-white px-6 py-3 rounded-md hover:bg-blue-700 transition duration-300"
+            className="px-6 py-3 bg-indigo-600 text-white rounded-lg shadow-md hover:bg-indigo-500 transition transform hover:scale-105 focus:ring-4 focus:ring-indigo-300"
           >
             + Create New Project
           </button>
-        </div>
+        </motion.div>
 
-        {/* Modal for Add Project Form */}
+        {/* Add Project Modal */}
         {showModal && <AddProjectForm onClose={() => setShowModal(false)} refetch={refetch} />}
 
         {/* Project Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
-          {projects?.map((project) => (
-            <div
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+          {projects?.map((project, index) => (
+            <motion.div
               key={project.id}
-              className="bg-white shadow-lg rounded-lg p-6 hover:shadow-xl transition duration-300"
+              onClick={() => router.push(`/projects/${project.id}`)}
+              className="bg-white shadow-lg rounded-lg p-6 hover:shadow-2xl transition duration-300 border-l-4 border-indigo-500 flex flex-col justify-between h-[250px] cursor-pointer"
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.4, delay: index * 0.1 }}
             >
-              <h3 className="text-xl font-semibold text-gray-700">{project.name}</h3>
-              <p className="text-gray-500">{project.description}</p>
+              {/* Project Title */}
+              <h3 className="text-2xl font-semibold text-gray-800 hover:underline cursor-pointer">
+                {project.name}
+              </h3>
 
-              <div className="mt-4 flex justify-between">
-                <div className="flex items-center space-x-2">
-                  <span className="font-bold text-gray-700">Tasks:</span>
-                  <span className="text-gray-500">{project.tasks.length}</span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <span className="font-bold text-gray-700">Team Members:</span>
-                  <span className="text-gray-500">{project.teams.length}</span>
-                </div>
-              </div>
+              {/* Project Description with "See More" */}
+              <p className="mt-2 text-gray-600 text-sm line-clamp-2">
+                {project.description?.length && project.description.length > 100
+                  ? `${project.description.substring(0, 100)}...`
+                  : project.description ?? "No description available"}
+              </p>
+              {project.description && project.description.length > 100 && (
+                <span className="text-indigo-500 text-sm mt-1">See More</span>
+              )}
 
-              <div className="mt-4">
-                {/* Project Status */}
+              {/* Task & Status */}
+              <div className="mt-4 flex justify-between items-center">
+                <div className="text-gray-700">
+                  <span className="font-bold">Tasks:</span> {project.tasks.length}
+                </div>
                 <p
-                  className={`text-sm ${
+                  className={`text-sm font-semibold ${
                     getProjectStatus(project.tasks) === "Completed"
-                      ? "text-green-600"
-                      : "text-yellow-600"
+                      ? "text-green-500"
+                      : "text-yellow-500"
                   }`}
                 >
-                  Status: {getProjectStatus(project.tasks)}
+                  {getProjectStatus(project.tasks)}
                 </p>
               </div>
 
-              {/* Buttons to Add Team Members and Tasks */}
-              <div className="mt-4 flex space-x-4">
-                <button
-                  onClick={() => alert(`Add team member to project ${project.name}`)}
-                  className="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 transition"
-                >
-                  Add Team Member
-                </button>
-                <button
-                  onClick={() => {
-                    setSelectedProject(project.id);
-                    setShowTaskModal(true);
-                  }}
-                  className="bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600 transition"
-                >
-                  Add Task
-                </button>
-              </div>
-            </div>
+              {/* Add Task Button */}
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setSelectedProject(project.id);
+                  setShowTaskModal(true);
+                }}
+                className="mt-4 w-full bg-indigo-600 text-white py-2 rounded-md shadow-md hover:bg-indigo-500 transition"
+              >
+                Add Task
+              </button>
+            </motion.div>
           ))}
         </div>
       </div>
@@ -129,7 +129,7 @@ const Dashboard = () => {
         <AddTaskModal
           projectId={selectedProject}
           onClose={() => setShowTaskModal(false)}
-          refetchTasks={refetch} // Pass the project refetch function
+          refetchTasks={refetch}
         />
       )}
     </Layout>

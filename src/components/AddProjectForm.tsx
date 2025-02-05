@@ -1,20 +1,38 @@
 import { useState } from "react";
-import { api } from "~/utils/api";  // Importing the API instance
+import { api } from "~/utils/api";
+import { motion } from "framer-motion";
+import { toast } from "react-hot-toast";
 
 const AddProjectForm = ({ onClose, refetch }: { onClose: () => void; refetch: () => void }) => {
-  const [name, setName] = useState('');
-  const [description, setDescription] = useState('');
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
 
-  // Mutation hook for creating a project
   const createProject = api.project.createProject.useMutation({
     onSuccess: () => {
-      alert("Project created successfully!");
+      toast.success("🎉 Project created successfully!", {
+        style: {
+          background: "#4CAF50",
+          color: "#fff",
+          fontWeight: "bold",
+          borderRadius: "8px",
+          padding: "12px",
+        },
+      });
       refetch();
-      onClose(); // Close the modal after successful submission
+      onClose();
     },
     onError: (error) => {
+      toast.error("❌ Failed to create project!", {
+        style: {
+          background: "#D32F2F",
+          color: "#fff",
+          fontWeight: "bold",
+          borderRadius: "8px",
+          padding: "12px",
+        },
+      });
       console.error("Error creating project", error);
     },
   });
@@ -25,14 +43,25 @@ const AddProjectForm = ({ onClose, refetch }: { onClose: () => void; refetch: ()
   };
 
   return (
-    <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-      <div className="bg-white p-6 rounded-lg shadow-lg w-[90%] max-w-md">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-semibold">Create New Project</h2>
-          <button onClick={onClose} className="text-gray-600 hover:text-gray-900">&times;</button>
+    <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-60 z-50">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.9 }}
+        transition={{ duration: 0.3 }}
+        className="bg-white rounded-lg shadow-2xl p-6 w-[90%] max-w-lg"
+      >
+        <div className="flex justify-between items-center border-b pb-4 mb-4">
+          <h2 className="text-2xl font-bold text-gray-800">Create New Project</h2>
+          <button
+            onClick={onClose}
+            className="text-gray-600 hover:text-gray-900 transition transform hover:scale-110 text-3xl leading-none"
+          >
+            &times;
+          </button>
         </div>
-        
-        <form onSubmit={handleSubmit} className="space-y-4">
+
+        <form onSubmit={handleSubmit} className="space-y-6">
           <div>
             <label className="block text-sm font-medium text-gray-700">Project Name</label>
             <input
@@ -40,16 +69,16 @@ const AddProjectForm = ({ onClose, refetch }: { onClose: () => void; refetch: ()
               value={name}
               onChange={(e) => setName(e.target.value)}
               required
-              className="w-full p-2 border rounded-md"
+              className="w-full mt-2 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
             />
           </div>
-          
+
           <div>
             <label className="block text-sm font-medium text-gray-700">Description</label>
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              className="w-full p-2 border rounded-md"
+              className="w-full mt-2 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
             />
           </div>
 
@@ -60,7 +89,7 @@ const AddProjectForm = ({ onClose, refetch }: { onClose: () => void; refetch: ()
                 type="date"
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
-                className="w-full p-2 border rounded-md"
+                className="w-full mt-2 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
               />
             </div>
             <div>
@@ -69,19 +98,19 @@ const AddProjectForm = ({ onClose, refetch }: { onClose: () => void; refetch: ()
                 type="date"
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
-                className="w-full p-2 border rounded-md"
+                className="w-full mt-2 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
               />
             </div>
           </div>
 
           <button
             type="submit"
-            className="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 transition"
+            className="w-full py-3 bg-indigo-600 text-white font-semibold rounded-lg shadow-md hover:bg-indigo-500 transition transform hover:scale-105"
           >
             Create Project
           </button>
         </form>
-      </div>
+      </motion.div>
     </div>
   );
 };

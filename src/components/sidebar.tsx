@@ -1,10 +1,11 @@
 import { useState } from "react";
+import { signOut, useSession } from "next-auth/react";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { useRouter } from "next/router";
-import { api } from "~/utils/api"; // Import trpc hook for fetching data
-import { FaSpinner } from 'react-icons/fa'; // You can use any spinner icon here
-import { FaHome, FaTh, FaUsers, FaCog, FaChevronLeft, FaChevronRight } from 'react-icons/fa'; // Import icons from react-icons
+import { api } from "~/utils/api";
+import { FaSpinner, FaHome, FaTh, FaUsers, FaCog, FaChevronLeft, FaChevronRight } from "react-icons/fa";
+import Image from "next/image";
 
 interface Project {
   id: number;
@@ -12,11 +13,11 @@ interface Project {
 }
 
 const Sidebar = () => {
-  const [expanded, setExpanded] = useState(true); // For the sidebar expansion
-  const [projectsOpen, setProjectsOpen] = useState(false); // State for toggling the "Projects" submenu
+  const { data: session } = useSession();
+  const [expanded, setExpanded] = useState(true);
+  const [projectsOpen, setProjectsOpen] = useState(false);
   const router = useRouter();
 
-  // Use trpc hook to fetch projects from your API
   const { data: projects, isLoading, error } = api.project.getAllProjects.useQuery();
 
   const menuItems = [
@@ -26,7 +27,6 @@ const Sidebar = () => {
     { name: "Settings", icon: <FaCog />, href: "/settings" },
   ];
 
-  // Loading state
   if (isLoading) {
     return (
       <div className="h-screen w-full flex items-center justify-center bg-gray-800">
@@ -47,37 +47,47 @@ const Sidebar = () => {
   }
 
   const handleProjectClick = (e: React.MouseEvent) => {
-    // Prevent the default navigation when clicking on the "Projects" main link
     e.preventDefault();
-    setProjectsOpen(!projectsOpen); // Toggle the submenu visibility
+    setProjectsOpen(!projectsOpen);
   };
 
   return (
     <motion.aside
       initial={{ width: 80 }}
       animate={{ width: expanded ? 250 : 80 }}
-      className="h-screen bg-gray-900 text-white p-4 flex flex-col shadow-lg"
+      className="h-screen bg-gray-900 text-white p-4 flex flex-col shadow-lg relative transition-all"
     >
-      {/* Expand/Collapse Button with Icons */}
-      <button
-        onClick={() => setExpanded(!expanded)}
-        className="mb-6 p-2 rounded-lg bg-gray-800 hover:bg-gray-700 flex items-center justify-center"
-      >
-        {expanded ? <FaChevronLeft size={24} /> : <FaChevronRight size={24} />}
-      </button>
+      {/* User Profile Section */}
+      {session && session.user && (
+        <div className="flex items-center gap-3 mb-6">
+          {session.user.image ? (
+            <Image
+              src={session.user.image}
+              alt="User Profile"
+              width={40}
+              height={40}
+              className="rounded-full border-2 border-gray-300 shadow-md"
+            />
+          ) : (
+            <div className="w-10 h-10 bg-gray-300 rounded-full flex items-center justify-center">
+              <span className="text-white font-medium">
+                {session.user.name ? session.user.name[0] : "U"}
+              </span>
+            </div>
+          )}
+          {expanded && <span className="text-lg font-medium">{session.user.name}</span>}
+        </div>
+      )}
 
       {/* Navigation Links */}
       <nav className="flex-1 space-y-4">
         {menuItems.map(({ name, icon, href }) => (
           <div key={name}>
-            {/* Main Menu Link */}
             {name === "Projects" ? (
               <button
                 onClick={handleProjectClick}
                 className={`flex items-center gap-3 p-3 rounded-lg w-full transition-all ${
-                  router.pathname === href
-                    ? "bg-blue-500 text-white"
-                    : "hover:bg-gray-700 text-white"
+                  router.pathname === href ? "bg-blue-600 text-white" : "hover:bg-gray-700 text-white"
                 }`}
               >
                 {icon}
@@ -87,30 +97,24 @@ const Sidebar = () => {
               <Link
                 href={href}
                 className={`flex items-center gap-3 p-3 rounded-lg w-full transition-all ${
-                  router.pathname === href
-                    ? "bg-blue-500 text-white"
-                    : "hover:bg-gray-700 text-white"
+                  router.pathname === href ? "bg-blue-600 text-white" : "hover:bg-gray-700 text-white"
                 }`}
               >
                 {icon}
                 {expanded && <span>{name}</span>}
               </Link>
             )}
-
-            {/* Dynamic Sub-links for "Projects" */}
             {name === "Projects" && expanded && projectsOpen && (
               <div className="pl-8 mt-2 space-y-2">
                 {projects?.map((project: Project) => (
                   <Link
-                    key={project.id} // Ensure unique key with 'id'
+                    key={project.id}
                     href={`/projects/${project.id}`}
                     className={`block p-2 rounded-lg transition-all ${
-                      router.pathname === `/projects/${project.id}`
-                        ? "bg-blue-500 text-white" // Ensuring text color is white when selected
-                        : "hover:bg-gray-700 text-white" // Default text color for unselected
+                      router.pathname === `/projects/${project.id}` ? "bg-blue-600 text-white" : "hover:bg-gray-700 text-white"
                     }`}
                   >
-                    {project.name} {/* Assuming the name is project.name */}
+                    {project.name}
                   </Link>
                 ))}
               </div>
@@ -118,6 +122,14 @@ const Sidebar = () => {
           </div>
         ))}
       </nav>
+
+      {/* Expand/Collapse Button */}
+      <button
+        onClick={() => setExpanded(!expanded)}
+        className="absolute top-1/2 right-[-16px] transform -translate-y-1/2 p-2 rounded-full bg-blue-600 text-white shadow-lg hover:bg-blue-700 flex items-center justify-center transition-all"
+      >
+        {expanded ? <FaChevronLeft size={24} /> : <FaChevronRight size={24} />}
+      </button>
     </motion.aside>
   );
 };
