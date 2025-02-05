@@ -8,9 +8,10 @@ export default {
       region: "ap-south-1",
     };
   },
-  stacks(app: App) { // Typing 'app' as App
+  stacks(app: App) {
     app.stack(function Site({ stack }) {
       const site = new NextjsSite(stack, "site", {
+        path: ".", // Specify the path of your Next.js application
         environment: {
           NEXTAUTH_URL: process.env.NEXTAUTH_URL || "",
           DATABASE_URL: process.env.DATABASE_URL || "",
