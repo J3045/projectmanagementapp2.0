@@ -5,7 +5,7 @@ export default {
   config(_input) {
     return {
       name: "projectmanagementapp",
-      region: "ap-south-1",
+      region: "ap-south-1", // You can change this based on your preferred AWS region
     };
   },
   stacks(app) {
@@ -22,7 +22,7 @@ export default {
       });
 
       stack.addOutputs({
-        SiteUrl: site.url,
+        SiteUrl: site.url,  // Outputs the deployed site URL
       });
     });
   },
