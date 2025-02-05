@@ -1,11 +1,10 @@
-import { type SSTConfig } from "sst";
 import { NextjsSite } from "sst/constructs";
 
 export default {
   config(_input) {
     return {
       name: "projectmanagementapp",
-      region: "ap-south-1", // You can change this based on your preferred AWS region
+      region: "ap-south-1",
     };
   },
   stacks(app) {
@@ -22,8 +21,8 @@ export default {
       });
 
       stack.addOutputs({
-        SiteUrl: site.url,  // Outputs the deployed site URL
+        SiteUrl: site.url,
       });
     });
   },
-} satisfies SSTConfig;
+};
