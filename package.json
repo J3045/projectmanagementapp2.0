@@ -51,7 +51,6 @@
     "zod": "^3.23.3"
   },
   "devDependencies": {
-    "@serverless-stack/resources": "^1.18.4",
     "@types/bcryptjs": "^2.4.6",
     "@types/eslint": "^8.56.10",
     "@types/node": "^20.17.17",
