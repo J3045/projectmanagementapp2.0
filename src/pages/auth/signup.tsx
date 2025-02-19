@@ -2,7 +2,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "~/utils/api";
-import Link from "next/link"; // Import next/link
+import Link from "next/link";
+import { TRPCClientError } from "@trpc/client"; // ✅ Import TRPCClientError for proper error handling
 
 export default function SignupPage() {
   const [name, setName] = useState("");
@@ -11,12 +12,18 @@ export default function SignupPage() {
   const [error, setError] = useState("");
   const router = useRouter();
 
+  // ✅ Using tRPC mutation for signup
   const signupMutation = api.auth.signup.useMutation({
     onSuccess: () => {
       router.push("/auth/signin");
     },
     onError: (err) => {
-      setError(err.message || "Signup failed. Please try again.");
+      // ✅ Ensure type safety when handling errors
+      if (err instanceof TRPCClientError && err.data?.code === "CONFLICT") {
+        setError("User already exists. Please log in.");
+      } else {
+        setError(err.message || "Signup failed. Please try again.");
+      }
     },
   });
 
@@ -31,11 +38,14 @@ export default function SignupPage() {
     <div className="min-h-screen flex items-center justify-center bg-gray-100">
       <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
         <h2 className="text-2xl font-bold mb-6 text-center text-gray-800">Sign Up</h2>
+        
+        {/* ✅ Show error message if exists */}
         {error && (
           <div className="mb-4 p-2 bg-red-100 text-red-600 text-sm rounded-md text-center">
             {error}
           </div>
         )}
+
         <form onSubmit={handleSignup} className="space-y-4">
           <input
             type="text"
@@ -69,15 +79,13 @@ export default function SignupPage() {
             {signupMutation.isPending ? "Signing up..." : "Sign Up"}
           </button>
         </form>
-        
 
-<p className="mt-6 text-center text-gray-600">
-  Already have an account?{" "}
-  <Link href="/auth/signin" className="text-blue-600 hover:underline">
-    Sign In
-  </Link>
-</p>
-
+        <p className="mt-6 text-center text-gray-600">
+          Already have an account?{" "}
+          <Link href="/auth/signin" className="text-blue-600 hover:underline">
+            Sign In
+          </Link>
+        </p>
       </div>
     </div>
   );
