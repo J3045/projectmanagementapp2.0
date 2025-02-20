@@ -1,9 +1,21 @@
-import { PrismaAdapter } from "@auth/prisma-adapter"; 
+import { PrismaAdapter } from "@auth/prisma-adapter";
 import { type DefaultSession, type NextAuthConfig } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import DiscordProvider from "next-auth/providers/discord";
 import { db } from "~/server/db";
 import { compare } from "bcryptjs";
+import pino from "pino";
+import rateLimit from "express-rate-limit";
+
+// ✅ Logger for better debugging
+const logger = pino();
+
+// ✅ Rate limiter to prevent brute force attacks
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5, // Max 5 login attempts per 15 minutes
+  message: "Too many login attempts, please try again later.",
+});
 
 declare module "next-auth" {
   interface Session extends DefaultSession {
@@ -17,7 +29,7 @@ declare module "next-auth" {
 export const authConfig = {
   adapter: PrismaAdapter(db),
   session: {
-    strategy: "jwt", // Store sessions in the database
+    strategy: "jwt",
   },
   providers: [
     DiscordProvider({
@@ -30,35 +42,41 @@ export const authConfig = {
         email: { label: "Email", type: "text", placeholder: "your@example.com" },
         password: { label: "Password", type: "password", placeholder: "******" },
       },
-      async authorize(credentials) {
+      async authorize(credentials, req) {
+        limiter(req, {}, () => {}); // Apply rate limiting
+
         const email = credentials?.email as string;
         const password = credentials?.password as string;
 
         if (!email || !password) {
-          throw new Error("Email and Password are required");
+          logger.warn("Missing credentials");
+          throw new Error("Invalid credentials");
         }
 
-        const user = await db.user.findUnique({ where: { email } });
+        const user = await db.user.findUnique({
+          where: { email },
+          select: { id: true, email: true, name: true, hashedPassword: true },
+        });
 
         if (!user?.hashedPassword) {
-          throw new Error("Invalid email or password");
+          logger.warn(`Login failed for email: ${email}`);
+          throw new Error("Invalid credentials");
         }
 
         const isValidPassword = await compare(password, user.hashedPassword);
 
         if (!isValidPassword) {
-          throw new Error("Invalid email or password");
+          logger.warn(`Invalid password attempt for email: ${email}`);
+          throw new Error("Invalid credentials");
         }
 
-        return {
-          id: user.id,
-          email: user.email,
-          name: user.name,
-        };
+        logger.info(`User ${email} logged in successfully`);
+
+        return { id: user.id, email: user.email, name: user.name };
       },
     }),
   ],
-  
+
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
@@ -66,18 +84,16 @@ export const authConfig = {
         token.email = user.email;
         token.name = user.name;
         token.picture = user.image;
-        token.exp = Math.floor(Date.now() / 1000) + 60 * 60 * 1; // Expires in 24 hours
-    }
-      
+        token.exp = Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 7; // 7 Days Expiry
+      }
       return token;
     },
-  
+
     async session({ session, token }) {
-      
-      const userId = token.id as string; // Ensure it's a string
-  
+      const userId = token.id as string;
+
       if (!userId) return session;
-  
+
       const freshUser = await db.user.findUnique({
         where: { id: userId },
         select: {
@@ -85,24 +101,24 @@ export const authConfig = {
           name: true,
           email: true,
           image: true,
-          emailVerified: true, // ✅ Add this line
+          emailVerified: true,
         },
       });
-  
+
       if (freshUser) {
         session.user = {
-          ...freshUser, // ✅ Includes emailVerified
-          email: freshUser.email ?? "", // Ensure it's always a string
+          ...freshUser,
+          email: freshUser.email ?? "",
         };
       }
-  
+
       return session;
     },
   },
-  
-  
+
   pages: {
     signIn: "/auth/signin",
   },
+
   secret: process.env.AUTH_SECRET,
 } satisfies NextAuthConfig;

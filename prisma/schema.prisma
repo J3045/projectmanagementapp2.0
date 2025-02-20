@@ -14,18 +14,18 @@ model User {
   id              String    @id @default(cuid())
   name            String?
   email           String?   @unique
-  emailVerified   DateTime?
+  emailVerified   DateTime? @default(now())
   image           String?
-  hashedPassword  String?
+  hashedPassword  String?  
   preferences     Json? 
   accounts        Account[]
   sessions        Session[]
   authoredTasks   Task[]    @relation("TaskAuthor")
   assignedTasks   Task[]    @relation("TaskAssignee") // Many-to-many relationship
-  teams           Team[]
 
-  @@index([email]) // Index for frequently queried field
+  @@index([email]) // ✅ Index for frequent lookups
 }
+
 
 model Account {
   id                 String  @id @default(cuid())
@@ -61,16 +61,7 @@ model VerificationToken {
   @@unique([identifier, token])
 }
 
-model Team {
-  id                   Int    @id @default(autoincrement())
-  teamName             String
-  productOwnerUserId   String?
-  projectManagerUserId String?
-  users                User[]
-  projects             ProjectTeam[]
 
-  @@index([teamName]) // Index for frequently queried field
-}
 
 model Project {
   id          Int       @id @default(autoincrement())
@@ -79,18 +70,12 @@ model Project {
   startDate   DateTime?
   endDate     DateTime?
   tasks       Task[]
-  teams       ProjectTeam[]
+
 
   @@index([name]) // Index for frequently queried field
 }
 
-model ProjectTeam {
-  id        Int     @id @default(autoincrement())
-  teamId    Int
-  projectId Int
-  team      Team    @relation(fields: [teamId], references: [id])
-  project   Project @relation(fields: [projectId], references: [id])
-}
+
 
 enum TaskStatus {
   TO_DO

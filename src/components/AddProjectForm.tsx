@@ -2,6 +2,18 @@ import { useState } from "react";
 import { api } from "~/utils/api";
 import { motion } from "framer-motion";
 import { toast } from "react-hot-toast";
+import { z } from "zod";
+
+// Define Zod Schema for form validation
+const projectSchema = z.object({
+  name: z.string().min(1, "Project name is required"),
+  description: z.string().min(1, "Project description is required"),
+  startDate: z.string().min(1, "Start date is required"),
+  endDate: z.string().min(1, "End date is required"),
+}).refine((data) => new Date(data.startDate) <= new Date(data.endDate), {
+  message: "End date must be after start date",
+  path: ["endDate"],
+});
 
 interface AddProjectFormProps {
   onClose: () => void;
@@ -71,49 +83,22 @@ const AddProjectForm: React.FC<AddProjectFormProps> = ({
     onSettled: () => setIsSubmitting(false),
   });
 
-  const updateProject = api.project.updateProject.useMutation({
-    onSuccess: () => {
-      toast.success("🎉 Project updated successfully!", {
-        style: {
-          background: "#4CAF50",
-          color: "#fff",
-          fontWeight: "bold",
-          borderRadius: "8px",
-          padding: "12px",
-        },
-      });
-      refetch();
-      onClose();
-      setIsAddingProject(false);
-    },
-    onError: (error) => {
-      toast.error("❌ Failed to update project!", {
-        style: {
-          background: "#D32F2F",
-          color: "#fff",
-          fontWeight: "bold",
-          borderRadius: "8px",
-          padding: "12px",
-        },
-      });
-      console.error("Error updating project", error);
-      setIsAddingProject(false);
-    },
-    onSettled: () => setIsSubmitting(false),
-  });
-
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
-    if (!name.trim()) return toast.error("Project name is required.");
-    if (!description.trim()) return toast.error("Project description is required.");
-    if (!startDate || !endDate) return toast.error("Please select both start and end dates.");
-    if (new Date(startDate) > new Date(endDate)) return toast.error("End date must be after start date.");
+    try {
+      // Validate form data using Zod
+      const validatedData = projectSchema.parse({ name, description, startDate, endDate });
 
-    if (projectData && onUpdate) {
-      onUpdate({ id: projectData.id, name, description, startDate, endDate });
-    } else {
-      createProject.mutate({ name, description, startDate, endDate });
+      if (projectData && onUpdate) {
+        onUpdate({ id: projectData.id, ...validatedData });
+      } else {
+        createProject.mutate(validatedData);
+      }
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        error.errors.forEach((err) => toast.error(`❌ ${err.message}`));
+      }
     }
   };
 

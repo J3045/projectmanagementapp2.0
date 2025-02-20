@@ -1,27 +1,27 @@
-import { createTRPCRouter, publicProcedure } from "../trpc";
+import { createTRPCRouter, protectedProcedure } from "../trpc";
 import { z } from "zod";
 import { db } from "~/server/db";
 
 export const projectRouter = createTRPCRouter({
   // Get all projects with associated tasks and teams
-  getAllProjects: publicProcedure.query(async () => {
+  getAllProjects: protectedProcedure.query(async () => {
     return await db.project.findMany({
-      include: { tasks: true, teams: true },
+      include: { tasks: true, },
     });
   }),
 
   // Get a specific project by ID, including tasks and teams
-  getProjectById: publicProcedure
+  getProjectById: protectedProcedure
     .input(z.object({ id: z.number() }))
     .query(async ({ input }) => {
       return await db.project.findUnique({
         where: { id: input.id },
-        include: { tasks: true, teams: true },
+        include: { tasks: true,  },
       });
     }),
 
   // Create a new project
-  createProject: publicProcedure
+  createProject: protectedProcedure
     .input(
       z.object({
         name: z.string(),
@@ -42,7 +42,7 @@ export const projectRouter = createTRPCRouter({
     }),
 
   // Update an existing project
-  updateProject: publicProcedure
+  updateProject: protectedProcedure
     .input(
       z.object({
         id: z.number(),
@@ -64,20 +64,9 @@ export const projectRouter = createTRPCRouter({
       });
     }),
 
-  // Assign a team to a project
-  assignTeamToProject: publicProcedure
-    .input(z.object({ projectId: z.number(), teamId: z.number() }))
-    .mutation(async ({ input }) => {
-      return await db.projectTeam.create({
-        data: {
-          projectId: input.projectId,
-          teamId: input.teamId,
-        },
-      });
-    }),
 
   // Delete a project
-  deleteProject: publicProcedure
+  deleteProject: protectedProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ input }) => {
       return await db.project.delete({
