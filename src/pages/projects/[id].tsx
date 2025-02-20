@@ -1,13 +1,15 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { useRouter } from "next/router";
+import { useParams } from "next/navigation";
 import { api } from "~/utils/api";
 import Layout from "~/components/Layout";
 import { motion, AnimatePresence } from "framer-motion";
 import { FaEdit, FaTrash, FaPlus } from "react-icons/fa";
-import AddTaskModal from "~/components/AddTaskModal";
+import dynamic from "next/dynamic";
 import { TaskStatus, TaskPriority } from "@prisma/client";
+
+const AddTaskModal = dynamic(() => import("~/components/AddTaskModal"), { ssr: false });
 
 type Task = {
   id: number;
@@ -39,32 +41,30 @@ const priorityMapping: Record<TaskPriority, string> = {
 const statuses: TaskStatus[] = ["TO_DO", "IN_PROGRESS", "IN_REVIEW", "COMPLETED"];
 
 const ProjectPage = () => {
-  const router = useRouter();
-  const { id } = router.query;
+  const params = useParams();
+  const id = Array.isArray(params?.id) ? params.id[0] : params?.id;
+  const projectId = id ? Number(id) : null;
 
   const [tasks, setTasks] = useState<Task[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [showAddTaskModal, setShowAddTaskModal] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
-  const [isLoading, setIsLoading] = useState(true); // Track initial loading state
-  const [globalLoading, setGlobalLoading] = useState(false); // Track global loading state
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Fetch project and tasks only if `id` is available
   const projectQuery = api.project.getProjectById.useQuery(
-    { id: Number(id) },
-    { enabled: !!id, retry: false } // Disable retries to avoid unnecessary delays
+    { id: projectId ?? 0 }, // Use 0 as a fallback
+    { enabled: !!projectId, retry: false }
   );
+  
 
-  const tasksQuery = api.task.getTasksByProject.useQuery(Number(id), {
-    enabled: !!id,
-    retry: false, // Disable retries to avoid unnecessary delays
+  const tasksQuery = api.task.getTasksByProject.useQuery(projectId ?? 0, {
+    enabled: !!projectId,
+    retry: false,
   });
-
   const updateTaskStatusMutation = api.task.updateTaskStatus.useMutation();
   const deleteTaskMutation = api.task.deleteTask.useMutation();
 
   useEffect(() => {
-    // Set loading to false once `id` is available and data is fetched
     if (id && !projectQuery.isLoading && !tasksQuery.isLoading) {
       setIsLoading(false);
     }
@@ -107,7 +107,6 @@ const ProjectPage = () => {
 
   const handleStatusChange = async (taskId: number, newStatus: TaskStatus) => {
     try {
-      setGlobalLoading(true); // Start global loader
       setTasks((prevTasks) =>
         prevTasks.map((task) => (task.id === taskId ? { ...task, status: newStatus } : task))
       );
@@ -115,21 +114,16 @@ const ProjectPage = () => {
     } catch (error) {
       console.error("Error updating task status:", error);
       setError("Failed to update task status.");
-    } finally {
-      setGlobalLoading(false); // Stop global loader
     }
   };
 
   const handleDeleteTask = async (taskId: number) => {
     try {
-      setGlobalLoading(true); // Start global loader
       await deleteTaskMutation.mutateAsync({ id: taskId });
       setTasks((prevTasks) => prevTasks.filter((task) => task.id !== taskId));
     } catch (error) {
       console.error("Error deleting task:", error);
       setError("Failed to delete task.");
-    } finally {
-      setGlobalLoading(false); // Stop global loader
     }
   };
 
@@ -142,7 +136,6 @@ const ProjectPage = () => {
     setShowAddTaskModal(true);
   };
 
-  // Show loading state until `id` and data are available
   if (isLoading) {
     return (
       <Layout>
@@ -153,7 +146,6 @@ const ProjectPage = () => {
     );
   }
 
-  // Handle errors
   if (error) {
     return (
       <Layout>
@@ -164,7 +156,6 @@ const ProjectPage = () => {
     );
   }
 
-  // Handle case where project is not found
   if (!projectQuery.data) {
     return (
       <Layout>
@@ -177,36 +168,7 @@ const ProjectPage = () => {
 
   return (
     <Layout>
-      {/* Global Loader */}
-      {globalLoading && (
-        <div className="fixed inset-0 z-50 bg-gray-800 bg-opacity-70 flex justify-center items-center">
-          <div className="bg-white p-6 rounded-lg shadow-lg">
-            <svg
-              className="animate-spin h-8 w-8 text-blue-600"
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-            >
-              <circle
-                className="opacity-25"
-                cx="12"
-                cy="12"
-                r="10"
-                stroke="currentColor"
-                strokeWidth="4"
-              ></circle>
-              <path
-                className="opacity-75"
-                fill="currentColor"
-                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-              ></path>
-            </svg>
-          </div>
-        </div>
-      )}
-
       <div className="container mx-auto p-6">
-        {/* Project Header */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -221,7 +183,6 @@ const ProjectPage = () => {
           </p>
         </motion.div>
 
-        {/* Add Task Button */}
         <div className="flex justify-end mb-6">
           <button
             onClick={handleAddTask}
@@ -232,7 +193,6 @@ const ProjectPage = () => {
           </button>
         </div>
 
-        {/* Task Columns */}
         <div className="flex space-x-6 overflow-x-auto pb-4">
           {statuses.map((status) => (
             <motion.div
@@ -337,7 +297,6 @@ const ProjectPage = () => {
         </div>
       </div>
 
-      {/* Add/Edit Task Modal */}
       {showAddTaskModal && (
         <AddTaskModal
           projectId={Number(id)}

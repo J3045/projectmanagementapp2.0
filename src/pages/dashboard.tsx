@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
@@ -23,7 +23,6 @@ const Dashboard = () => {
   } | null>(null);
   const [loadingProjectId, setLoadingProjectId] = useState<number | null>(null);
   const [isAddingProject, setIsAddingProject] = useState(false);
-  const [isAddingTask, setIsAddingTask] = useState(false);
   const [isEditingProject, setIsEditingProject] = useState(false);
   const [editProjectData, setEditProjectData] = useState<{
     id: number;
@@ -40,12 +39,10 @@ const Dashboard = () => {
     dueDate?: "asc" | "desc";
   }>({});
 
-  const filterRef = useRef<HTMLDivElement>(null); // Ref for the filter modal
+  const filterRef = useRef<HTMLDivElement>(null);
 
-  // Fetch projects using tRPC
   const { data: projects, isError, refetch } = api.project.getAllProjects.useQuery();
 
-  // Close filter modal when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (filterRef.current && !filterRef.current.contains(event.target as Node)) {
@@ -57,7 +54,6 @@ const Dashboard = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Delete project mutation
   const deleteProject = api.project.deleteProject.useMutation({
     onMutate: ({ id }) => setLoadingProjectId(id),
     onSuccess: () => {
@@ -67,7 +63,6 @@ const Dashboard = () => {
     onSettled: () => setLoadingProjectId(null),
   });
 
-  // Update project mutation
   const updateProject = api.project.updateProject.useMutation({
     onSuccess: () => {
       refetch();
@@ -76,26 +71,22 @@ const Dashboard = () => {
     },
   });
 
-  // Determine project status based on tasks
-  const getProjectStatus = (tasks: Task[]) => {
+  const getProjectStatus = useCallback((tasks: Task[]) => {
     if (tasks.length === 0) return "No Tasks";
     return tasks.every((task) => task.status === TaskStatus.COMPLETED) ? "Completed" : "In Progress";
-  };
+  }, []);
 
-  // Handle project deletion confirmation
-  const handleDeleteConfirmation = (projectId: number, projectName: string) => {
+  const handleDeleteConfirmation = useCallback((projectId: number, projectName: string) => {
     setDeleteConfirmation({ projectId, projectName });
-  };
+  }, []);
 
-  // Handle actual project deletion
-  const handleDeleteProject = () => {
+  const handleDeleteProject = useCallback(() => {
     if (deleteConfirmation) {
       deleteProject.mutate({ id: deleteConfirmation.projectId });
     }
-  };
+  }, [deleteConfirmation, deleteProject]);
 
-  // Handle project edit
-  const handleEditProject = (project: {
+  const handleEditProject = useCallback((project: {
     id: number;
     name: string;
     description: string;
@@ -104,10 +95,9 @@ const Dashboard = () => {
   }) => {
     setEditProjectData(project);
     setIsEditingProject(true);
-  };
+  }, []);
 
-  // Handle project update
-  const handleUpdateProject = (updatedData: {
+  const handleUpdateProject = useCallback((updatedData: {
     id: number;
     name: string;
     description: string;
@@ -115,31 +105,24 @@ const Dashboard = () => {
     endDate: string;
   }) => {
     updateProject.mutate(updatedData);
-  };
+  }, [updateProject]);
 
-  // Toggle description expansion
-  const toggleDescription = (projectId: number) => {
+  const toggleDescription = useCallback((projectId: number) => {
     setExpandedDescriptions((prev) => ({
       ...prev,
       [projectId]: !prev[projectId],
     }));
-  };
+  }, []);
 
-  // Filter projects based on criteria
   const filteredProjects = projects?.filter((project) => {
     const status = getProjectStatus(project.tasks);
-
-    // Filter by status
     if (filterCriteria.status && status !== filterCriteria.status) {
       return false;
     }
-
     return true;
   });
 
-  // Sort projects by task count and due date
   const sortedProjects = filteredProjects?.sort((a, b) => {
-    // Sort by task count
     if (filterCriteria.taskCount) {
       const taskCountA = a.tasks.length;
       const taskCountB = b.tasks.length;
@@ -150,7 +133,6 @@ const Dashboard = () => {
       }
     }
 
-    // Sort by due date
     if (filterCriteria.dueDate) {
       const dateA = a.endDate ? new Date(a.endDate).getTime() : Infinity;
       const dateB = b.endDate ? new Date(b.endDate).getTime() : Infinity;
@@ -175,7 +157,6 @@ const Dashboard = () => {
   return (
     <Layout>
       <div className="container mx-auto py-12 px-4">
-        {/* Dashboard Header */}
         <motion.div
           className="flex justify-between items-center mb-12 p-8 rounded-xl bg-gradient-to-r from-gray-700 via-gray-800 to-gray-900 shadow-lg text-white"
           initial={{ opacity: 0, y: -20 }}
@@ -190,7 +171,6 @@ const Dashboard = () => {
           </div>
         </motion.div>
 
-        {/* Create Project and Filter Buttons */}
         <motion.div
           className="mb-8 flex justify-between items-center"
           initial={{ opacity: 0, y: 10 }}
@@ -204,7 +184,6 @@ const Dashboard = () => {
             {isAddingProject ? "Adding..." : "+ Create New Project"}
           </button>
 
-          {/* Filter Button */}
           <div className="relative" ref={filterRef}>
             <button
               onClick={() => setShowFilters(!showFilters)}
@@ -213,7 +192,6 @@ const Dashboard = () => {
               <FaFilter /> Filter
             </button>
 
-            {/* Filter Dropdown */}
             {showFilters && (
               <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-lg p-4 z-10">
                 <div className="mb-4">
@@ -272,7 +250,6 @@ const Dashboard = () => {
           </div>
         </motion.div>
 
-        {/* Add Project Modal */}
         {showModal && (
           <AddProjectForm
             onClose={() => setShowModal(false)}
@@ -281,7 +258,6 @@ const Dashboard = () => {
           />
         )}
 
-        {/* Edit Project Modal */}
         {isEditingProject && editProjectData && (
           <AddProjectForm
             onClose={() => {
@@ -295,7 +271,6 @@ const Dashboard = () => {
           />
         )}
 
-        {/* Project Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
           {sortedProjects?.map((project, index) => (
             <motion.div
@@ -305,7 +280,6 @@ const Dashboard = () => {
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.4, delay: index * 0.1 }}
             >
-              {/* Project Title and Description */}
               <div onClick={() => router.push(`/projects/${project.id}`)} className="cursor-pointer">
                 <h3 className="text-2xl font-bold text-gray-800 mb-2">{project.name}</h3>
                 <div className="text-gray-600 text-sm">
@@ -334,7 +308,6 @@ const Dashboard = () => {
                 </div>
               </div>
 
-              {/* Project Dates */}
               <div className="mt-4 flex items-center text-gray-700 text-sm">
                 <FaCalendarAlt className="mr-2 text-gray-500" />
                 <span>
@@ -343,7 +316,6 @@ const Dashboard = () => {
                 </span>
               </div>
 
-              {/* Task & Status */}
               <div className="mt-4 flex justify-between items-center">
                 <div className="text-gray-700 text-sm">
                   <span className="font-semibold">Tasks:</span> {project.tasks.length}
@@ -359,9 +331,7 @@ const Dashboard = () => {
                 </p>
               </div>
 
-              {/* Action Icons */}
               <div className="flex gap-4 mt-4 border-t border-gray-100 pt-4">
-                {/* Add Task Icon */}
                 <FaPlus
                   onClick={(e) => {
                     e.stopPropagation();
@@ -371,7 +341,6 @@ const Dashboard = () => {
                   className="text-indigo-600 cursor-pointer hover:text-indigo-500 transition text-xl"
                 />
 
-                {/* Edit Icon */}
                 <FaEdit
                   onClick={(e) => {
                     e.stopPropagation();
@@ -386,7 +355,6 @@ const Dashboard = () => {
                   className="text-yellow-500 cursor-pointer hover:text-yellow-400 transition text-xl"
                 />
 
-                {/* Delete Icon */}
                 <FaTrash
                   onClick={(e) => {
                     e.stopPropagation();
@@ -400,7 +368,6 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* Task Modal */}
       {showTaskModal && selectedProject && (
         <AddTaskModal
           projectId={selectedProject}
@@ -409,7 +376,6 @@ const Dashboard = () => {
         />
       )}
 
-      {/* Deletion Confirmation Modal */}
       {deleteConfirmation && (
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
           <div className="bg-white p-6 rounded-lg shadow-lg w-96">
