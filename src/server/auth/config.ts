@@ -9,7 +9,12 @@ import rateLimit from "express-rate-limit";
 
 // ✅ Logger for better debugging
 const logger = pino();
-
+export interface Session extends DefaultSession {
+  user: {
+    id: string;
+  } & DefaultSession["user"];
+  expire: string;
+}
 // ✅ Rate limiter to prevent brute force attacks
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
@@ -21,8 +26,8 @@ declare module "next-auth" {
   interface Session extends DefaultSession {
     user: {
       id: string;
-      email: string;
     } & DefaultSession["user"];
+    expire: string;
   }
 }
 

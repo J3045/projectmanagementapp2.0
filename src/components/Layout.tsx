@@ -1,7 +1,7 @@
 import { ReactNode } from "react";
 import Navbar from "./navbar";
 import Sidebar from "./sidebar";
-import { GlobalLoader } from "./GlobalLoader";
+
 
 interface LayoutProps {
   children: ReactNode;
@@ -10,8 +10,7 @@ interface LayoutProps {
 const Layout: React.FC<LayoutProps> = ({ children }) => {
   return (
     <div className="flex h-screen bg-gray-100 text-gray-900">
-      {/* Global Loader */}
-      <GlobalLoader />
+    
 
       {/* Sidebar - Fixed height and full height */}
       <div className="h-screen sticky top-0">

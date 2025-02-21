@@ -60,16 +60,19 @@ export default function Profile() {
   const onSubmitProfile: SubmitHandler<z.infer<typeof profileSchema>> = async (data) => {
     try {
       setIsSubmitting(true);
-      const updatedData = {
-        name: data.name,
-        email: data.email?.trim() !== "" ? data.email : session?.user?.email,
+      const updatedData: {
+        name: string;
+        email?: string; // Keep this optional
+      } = {
+        name: data.name, // Use the name from the data parameter
+        email: data.email?.trim() !== "" ? data.email : session?.user?.email || undefined, // Set to undefined if emailValue is null
       };
       await updateProfile.mutateAsync(updatedData);
       toast.success("Profile updated!");
       await update();
-      setIsProfileModalOpen(false); // Close modal after successful update
-    } catch (error: any) {
-      toast.error(error.message || "Failed to update profile");
+    } catch (error) {
+      console.error("Error updating profile:", error);
+      toast.error("Failed to update profile.");
     } finally {
       setIsSubmitting(false);
     }
