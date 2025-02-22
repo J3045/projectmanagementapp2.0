@@ -12,7 +12,7 @@ interface AddTaskModalProps {
   projectId: number;
   onClose: () => void;
   refetchTasks: () => void;
-  taskData?: Task | null; // Add taskData prop for editing
+  taskData?: Task | null; // Use the shared Task type
 }
 
 type Task = {

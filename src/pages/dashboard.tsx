@@ -11,10 +11,42 @@ import { Filter } from "../components/Filter";
 import { ProjectCard } from "../components/ProjectCard";
 import { DeleteConfirmationModal } from "../components/DeleteConfirmationModal";
 import { TaskStatus } from "@prisma/client";
+import { GetServerSideProps } from "next";
+import { db } from "~/server/db";
 
-export const Dashboard = () => {
+export const getServerSideProps: GetServerSideProps = async () => {
+  const projects = await db.project.findMany({
+    include: {
+      tasks: true,
+    },
+  });
+
+  return {
+    props: {
+      projects: JSON.parse(JSON.stringify(projects)), // Convert dates to strings
+    },
+  };
+};
+
+interface DashboardProps {
+  projects: {
+    id: number;
+    name: string;
+    description: string;
+    startDate: string;
+    endDate: string;
+    tasks: any[];
+  }[];
+}
+
+export const Dashboard = ({ projects: initialProjects }: DashboardProps) => {
+  const projects = initialProjects.map(project => ({
+    ...project,
+    startDate: new Date(project.startDate),
+    endDate: new Date(project.endDate)
+  }));
   const { data: session } = useSession();
-  const [loadingProjectId, setLoadingProjectId] = useState<number | null>(null); // Reintroduce the state
+  const [loadingProjectId, setLoadingProjectId] = useState<number | null>(null);
   const router = useRouter();
   const [showModal, setShowModal] = useState(false);
   const [selectedProject, setSelectedProject] = useState<number | null>(null);
@@ -29,8 +61,8 @@ export const Dashboard = () => {
     id: number;
     name: string;
     description: string;
-    startDate: string; // Ensure this is a string
-    endDate: string; // Ensure this is a string
+    startDate: string;
+    endDate: string;
   } | null>(null);
   const [expandedDescriptions, setExpandedDescriptions] = useState<Record<number, boolean>>({});
   const [filterCriteria, setFilterCriteria] = useState<{
@@ -39,15 +71,17 @@ export const Dashboard = () => {
     dueDate?: "asc" | "desc";
   }>({});
 
-  const { data: projects, isError, refetch } = api.project.getAllProjects.useQuery();
+  const { data: projectsData, isError, refetch } = api.project.getAllProjects.useQuery(undefined, {
+    initialData: projects, // Use the data fetched from the server as initial data
+  });
 
   const deleteProject = api.project.deleteProject.useMutation({
-    onMutate: ({ id }) => setLoadingProjectId(id), // Reintroduce the onMutate handler
+    onMutate: ({ id }) => setLoadingProjectId(id),
     onSuccess: () => {
       setDeleteConfirmation(null);
       refetch();
     },
-    onSettled: () => setLoadingProjectId(null), // Reintroduce the onSettled handler
+    onSettled: () => setLoadingProjectId(null),
   });
 
   const updateProject = api.project.updateProject.useMutation({
@@ -77,13 +111,13 @@ export const Dashboard = () => {
     id: number;
     name: string;
     description: string;
-    startDate: Date | null; // Allow null
-    endDate: Date | null; // Allow null
+    startDate: Date | null;
+    endDate: Date | null;
   }) => {
     setEditProjectData({
       ...project,
-      startDate: project.startDate?.toISOString().split("T")[0] || "", // Default to empty string if null
-      endDate: project.endDate?.toISOString().split("T")[0] || "", // Default to empty string if null
+      startDate: project.startDate?.toISOString().split("T")[0] || "",
+      endDate: project.endDate?.toISOString().split("T")[0] || "",
     });
     setIsEditingProject(true);
   }, []);
@@ -105,7 +139,7 @@ export const Dashboard = () => {
     }));
   }, []);
 
-  const filteredProjects = projects?.filter((project) => {
+  const filteredProjects = projectsData?.filter((project) => {
     const status = getProjectStatus(project.tasks);
     if (filterCriteria.status && status !== filterCriteria.status) {
       return false;
@@ -193,9 +227,9 @@ export const Dashboard = () => {
               key={project.id}
               project={{
                 ...project,
-                description: project.description || "No description available", // Default value if null
-                startDate: project.startDate ? new Date(project.startDate) : null, // Default to null if undefined
-                endDate: project.endDate ? new Date(project.endDate) : null, // Default to null if undefined
+                description: project.description || "No description available",
+                startDate: project.startDate ? new Date(project.startDate) : null,
+                endDate: project.endDate ? new Date(project.endDate) : null,
               }}
               expandedDescriptions={expandedDescriptions}
               toggleDescription={toggleDescription}
@@ -217,12 +251,12 @@ export const Dashboard = () => {
         />
       )}
 
-<DeleteConfirmationModal
-  deleteConfirmation={deleteConfirmation}
-  setDeleteConfirmation={setDeleteConfirmation}
-  handleDeleteProject={handleDeleteProject}
-  loadingProjectId={loadingProjectId} // Pass the prop
-/>
+      <DeleteConfirmationModal
+        deleteConfirmation={deleteConfirmation}
+        setDeleteConfirmation={setDeleteConfirmation}
+        handleDeleteProject={handleDeleteProject}
+        loadingProjectId={loadingProjectId}
+      />
     </Layout>
   );
 };
