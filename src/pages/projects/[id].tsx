@@ -1,5 +1,3 @@
-"use client";
-
 import { useState, useEffect, useMemo } from "react";
 import { useParams } from "next/navigation";
 import { api } from "~/utils/api";
@@ -8,6 +6,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { FaEdit, FaTrash, FaPlus } from "react-icons/fa";
 import dynamic from "next/dynamic";
 import { TaskStatus, TaskPriority } from "@prisma/client";
+import { GetServerSideProps } from "next";
+import { db } from "~/server/db";
 
 const AddTaskModal = dynamic(() => import("~/components/AddTaskModal"), { ssr: false });
 
@@ -18,10 +18,22 @@ type Task = {
   status: TaskStatus;
   priority: TaskPriority;
   tags?: string;
-  startDate?: Date | null;
-  dueDate?: Date | null;
+  startDate?: string | null; // Updated to string
+  dueDate?: string | null; // Updated to string
   points?: number;
-  assignedUsers: { id: string; name: string | null }[];
+  assignedUsers: { 
+    id: string; 
+    name: string | null; 
+  }[];
+};
+
+type ProjectPageProps = {
+  project: {
+    id: number;
+    name: string;
+    description: string | null;
+  };
+  tasks: Task[];
 };
 
 const statusMapping: Record<TaskStatus, string> = {
@@ -40,52 +52,99 @@ const priorityMapping: Record<TaskPriority, string> = {
 
 const statuses: TaskStatus[] = ["TO_DO", "IN_PROGRESS", "IN_REVIEW", "COMPLETED"];
 
-const ProjectPage = () => {
+export const getServerSideProps: GetServerSideProps<ProjectPageProps> = async (context) => {
+  const { id } = context.params as { id: string };
+
+  const project = await db.project.findUnique({
+    where: { id: Number(id) },
+    include: {
+      tasks: {
+        include: {
+          assignedUsers: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+        },
+      },
+    },
+  });
+
+  if (!project) {
+    return {
+      notFound: true,
+    };
+  }
+
+  // Convert Date objects to strings
+  const tasks = project.tasks.map((task) => ({
+    id: task.id,
+    title: task.title,
+    description: task.description ?? undefined,
+    status: task.status ?? 'TO_DO',
+    priority: task.priority ?? 'LOW',
+    tags: task.tags ?? undefined,
+    startDate: task.startDate?.toISOString() ?? null, // Convert Date to string
+    dueDate: task.dueDate?.toISOString() ?? null, // Convert Date to string
+    points: task.points ?? undefined,
+    assignedUsers: task.assignedUsers.map(({ id, name }) => ({
+      id,
+      name,
+    })),
+  }));
+
+  return {
+    props: {
+      project: {
+        id: project.id,
+        name: project.name,
+        description: project.description,
+        tasks, // Include tasks in the project
+      },
+      tasks,
+    },
+  };
+};
+
+const ProjectPage = ({ project: initialProject, tasks: initialTasks }: ProjectPageProps) => {
   const params = useParams();
   const id = Array.isArray(params?.id) ? params.id[0] : params?.id;
   const projectId = id ? Number(id) : null;
-
-  const [tasks, setTasks] = useState<Task[]>([]);
+  const [tasks, setTasks] = useState<Task[]>(initialTasks);
   const [error, setError] = useState<string | null>(null);
   const [showAddTaskModal, setShowAddTaskModal] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
 
   const projectQuery = api.project.getProjectById.useQuery(
-    { id: projectId ?? 0 }, // Use 0 as a fallback
-    { enabled: !!projectId, retry: false }
+    { id: projectId ?? 0 },
+    { enabled: !!projectId, initialData: initialProject }
   );
-  
 
   const tasksQuery = api.task.getTasksByProject.useQuery(projectId ?? 0, {
     enabled: !!projectId,
-    retry: false,
+    initialData: initialTasks,
   });
+
+  if (!projectQuery.data) {
+    return (
+      <Layout>
+        <div className="flex justify-center items-center h-screen">
+          <div className="text-gray-600">Project not found</div>
+        </div>
+      </Layout>
+    );
+  }
+
+  const project = projectQuery.data;
+
   const updateTaskStatusMutation = api.task.updateTaskStatus.useMutation();
   const deleteTaskMutation = api.task.deleteTask.useMutation();
 
   useEffect(() => {
-    if (id && !projectQuery.isLoading && !tasksQuery.isLoading) {
-      setIsLoading(false);
-    }
-  }, [id, projectQuery.isLoading, tasksQuery.isLoading]);
-
-  useEffect(() => {
     if (tasksQuery.data) {
-      setTasks(
-        tasksQuery.data.map((task) => ({
-          id: task.id,
-          title: task.title,
-          description: task.description ?? undefined,
-          status: task.status ?? "TO_DO",
-          priority: task.priority ?? "LOW",
-          tags: task.tags ?? undefined,
-          startDate: task.startDate ?? null,
-          dueDate: task.dueDate ?? null,
-          points: task.points ?? undefined,
-          assignedUsers: task.assignedUsers.map(({ id, name }) => ({ id, name })),
-        }))
-      );
+      setTasks(tasksQuery.data);
     }
     if (projectQuery.error || tasksQuery.error) {
       setError("Error loading project or tasks");
@@ -132,35 +191,19 @@ const ProjectPage = () => {
   };
 
   const handleEditTask = (task: Task) => {
-    setSelectedTask(task);
+    setSelectedTask({
+      ...task,
+      startDate: task.startDate ? new Date(task.startDate) : null,
+      dueDate: task.dueDate ? new Date(task.dueDate) : null,
+    });
     setShowAddTaskModal(true);
   };
-
-  if (isLoading) {
-    return (
-      <Layout>
-        <div className="flex justify-center items-center h-screen">
-          <div className="text-gray-600">Loading...</div>
-        </div>
-      </Layout>
-    );
-  }
 
   if (error) {
     return (
       <Layout>
         <div className="flex justify-center items-center h-screen">
           <div className="text-red-500">{error}</div>
-        </div>
-      </Layout>
-    );
-  }
-
-  if (!projectQuery.data) {
-    return (
-      <Layout>
-        <div className="flex justify-center items-center h-screen">
-          <div className="text-gray-600">Project not found</div>
         </div>
       </Layout>
     );
@@ -176,10 +219,10 @@ const ProjectPage = () => {
           className="mb-8"
         >
           <h1 className="text-4xl font-bold text-gray-800 mb-2">
-            {projectQuery.data.name}
+            {project.name}
           </h1>
           <p className="text-gray-600">
-            {projectQuery.data.description ?? "No description available"}
+            {project.description ?? "No description available"}
           </p>
         </motion.div>
 
@@ -240,11 +283,11 @@ const ProjectPage = () => {
                         </div>
                         <div className="text-xs text-gray-500 mb-3">
                           <strong>Start Date:</strong>{" "}
-                          {task.startDate?.toLocaleDateString() ?? "Not set"}
+                          {task.startDate ? new Date(task.startDate).toLocaleDateString() : "Not set"}
                         </div>
                         <div className="text-xs text-gray-500 mb-3">
                           <strong>Due Date:</strong>{" "}
-                          {task.dueDate?.toLocaleDateString() ?? "Not set"}
+                          {task.dueDate ? new Date(task.dueDate).toLocaleDateString() : "Not set"}
                         </div>
                         <div className="text-xs text-gray-500 mb-3">
                           <strong>Points:</strong> {task.points ?? "Not set"}

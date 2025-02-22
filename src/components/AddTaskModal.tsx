@@ -22,8 +22,8 @@ type Task = {
   status: TaskStatus;
   priority: TaskPriority;
   tags?: string;
-  startDate?: Date | null;
-  dueDate?: Date | null;
+  startDate?: string | null;
+  dueDate?: string | null;
   points?: number;
   assignedUsers: { id: string; name: string | null }[];
 };
@@ -32,11 +32,11 @@ const AddTaskModal = ({ projectId, onClose, refetchTasks, taskData }: AddTaskMod
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [assignedUserIds, setAssignedUserIds] = useState<string[]>([]);
-  const [dueDate, setDueDate] = useState<Date | null>(null);
+  const [dueDate, setDueDate] = useState<string | null>(null);
   const [status, setStatus] = useState<TaskStatus | null>(null);
   const [priority, setPriority] = useState<TaskPriority | null>(null);
   const [tags, setTags] = useState("");
-  const [startDate, setStartDate] = useState<Date | null>(null);
+  const [startDate, setStartDate] = useState<string | null>(null);
   const [points, setPoints] = useState<number | undefined>(undefined);
   const [users, setUsers] = useState<{ id: string; name: string | null }[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -153,11 +153,11 @@ const AddTaskModal = ({ projectId, onClose, refetchTasks, taskData }: AddTaskMod
   };
 
   const handleStartDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedStartDate = new Date(e.target.value);
+    const selectedStartDate = e.target.value;
     setStartDate(selectedStartDate);
 
     // Reset due date if it's earlier than the new start date
-    if (dueDate && selectedStartDate > dueDate) {
+    if (dueDate && new Date(selectedStartDate) > new Date(dueDate)) {
       setDueDate(null);
     }
   };
@@ -244,7 +244,7 @@ const AddTaskModal = ({ projectId, onClose, refetchTasks, taskData }: AddTaskMod
             <input
               type="date"
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-              value={startDate?.toISOString().split("T")[0] ?? ""}
+              value={startDate ?? ""}
               onChange={handleStartDateChange}
             />
           </div>
@@ -255,9 +255,9 @@ const AddTaskModal = ({ projectId, onClose, refetchTasks, taskData }: AddTaskMod
             <input
               type="date"
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-              value={dueDate?.toISOString().split("T")[0] ?? ""}
-              onChange={(e) => setDueDate(new Date(e.target.value))}
-              min={startDate?.toISOString().split("T")[0]} // Ensure due date cannot be earlier than start date
+              value={dueDate ?? ""}
+              onChange={(e) => setDueDate(e.target.value)}
+              min={startDate} // Ensure due date cannot be earlier than start date
               disabled={!startDate} // Disable until start date is selected
             />
           </div>
