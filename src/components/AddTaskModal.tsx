@@ -8,35 +8,36 @@ import Select from "react-select";
 import { MultiValue } from "react-select";
 import { toast } from "react-hot-toast";
 
-interface AddTaskModalProps {
-  projectId: number;
-  onClose: () => void;
-  refetchTasks: () => void;
-  taskData?: Task | null; // Use the shared Task type
-}
-
+// Define the Task type locally (or import it from a shared file)
 type Task = {
-  id?: number;
+  id: number;
   title: string;
   description?: string;
   status: TaskStatus;
   priority: TaskPriority;
   tags?: string;
-  startDate?: string | null;
-  dueDate?: string | null;
+  startDate?: string | null; // Updated to string | null
+  dueDate?: string | null; // Updated to string | null
   points?: number;
   assignedUsers: { id: string; name: string | null }[];
 };
+
+interface AddTaskModalProps {
+  projectId: number;
+  onClose: () => void;
+  refetchTasks: () => void;
+  taskData?: Task | null; // Use the updated Task type
+}
 
 const AddTaskModal = ({ projectId, onClose, refetchTasks, taskData }: AddTaskModalProps) => {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [assignedUserIds, setAssignedUserIds] = useState<string[]>([]);
-  const [dueDate, setDueDate] = useState<string | null>(null);
+  const [dueDate, setDueDate] = useState<Date | null>(null);
   const [status, setStatus] = useState<TaskStatus | null>(null);
   const [priority, setPriority] = useState<TaskPriority | null>(null);
   const [tags, setTags] = useState("");
-  const [startDate, setStartDate] = useState<string | null>(null);
+  const [startDate, setStartDate] = useState<Date | null>(null);
   const [points, setPoints] = useState<number | undefined>(undefined);
   const [users, setUsers] = useState<{ id: string; name: string | null }[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -56,11 +57,11 @@ const AddTaskModal = ({ projectId, onClose, refetchTasks, taskData }: AddTaskMod
       setTitle(taskData.title);
       setDescription(taskData.description ?? "");
       setAssignedUserIds(taskData.assignedUsers.map((user) => user.id));
-      setDueDate(taskData.dueDate ?? null);
+      setDueDate(taskData.dueDate ? new Date(taskData.dueDate) : null); // Convert string to Date
       setStatus(taskData.status);
       setPriority(taskData.priority);
       setTags(taskData.tags ?? "");
-      setStartDate(taskData.startDate ?? null);
+      setStartDate(taskData.startDate ? new Date(taskData.startDate) : null); // Convert string to Date
       setPoints(taskData.points ?? undefined);
     } else {
       // Reset form fields if taskData is null (adding mode)
@@ -91,6 +92,7 @@ const AddTaskModal = ({ projectId, onClose, refetchTasks, taskData }: AddTaskMod
     onSuccess: () => {
       onClose();
       refetchTasks();
+      toast.success("Task created successfully!");
     },
     onError: (err) => {
       console.error("Error creating task:", err);
@@ -102,6 +104,7 @@ const AddTaskModal = ({ projectId, onClose, refetchTasks, taskData }: AddTaskMod
     onSuccess: () => {
       onClose();
       refetchTasks();
+      toast.success("Task updated successfully!");
     },
     onError: (err) => {
       console.error("Error updating task:", err);
@@ -119,47 +122,69 @@ const AddTaskModal = ({ projectId, onClose, refetchTasks, taskData }: AddTaskMod
         toast.error("Please select a task status.");
         return;
       }
-      if (startDate && dueDate && new Date(startDate) > new Date(dueDate)) {
+      if (startDate && dueDate && startDate > dueDate) {
         toast.error("Due date must be after start date.");
         return;
       }
       setIsSubmitting(true);
+
+      // Convert startDate and dueDate to Date | null
+      const formattedStartDate = startDate ? new Date(startDate) : null;
+      const formattedDueDate = dueDate ? new Date(dueDate) : null;
 
       const taskDataInput = {
         title,
         description,
         projectId,
         assignedUserIds,
-        dueDate,
+        dueDate: formattedDueDate, // Use Date | null
         status: status ?? undefined,
         priority: priority ?? undefined,
         tags,
-        startDate,
+        startDate: formattedStartDate, // Use Date | null
         points,
       };
 
       if (taskData?.id) {
         // Update existing task
-        updateTaskMutation.mutate({ id: taskData.id, ...taskDataInput });
+        updateTaskMutation.mutate({ id: taskData.id, ...taskDataInput }, {
+          onSuccess: () => {
+            refetchTasks(); // Refetch tasks after update
+            onClose();
+           
+          },
+        });
       } else {
         // Create new task
-        createTaskMutation.mutate(taskDataInput);
+        createTaskMutation.mutate(taskDataInput, {
+          onSuccess: () => {
+            refetchTasks(); // Refetch tasks after creation
+            onClose();
+            toast.success("Task created successfully!");
+          },
+        });
       }
     } catch (error) {
       console.error("Error submitting task:", error);
+      toast.error("Failed to submit task. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const handleStartDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedStartDate = e.target.value;
+    const selectedStartDate = e.target.value ? new Date(e.target.value) : null;
     setStartDate(selectedStartDate);
 
     // Reset due date if it's earlier than the new start date
-    if (dueDate && new Date(selectedStartDate) > new Date(dueDate)) {
+    if (dueDate && selectedStartDate && selectedStartDate > dueDate) {
       setDueDate(null);
     }
+  };
+
+  const handleDueDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedDueDate = e.target.value ? new Date(e.target.value) : null;
+    setDueDate(selectedDueDate);
   };
 
   return (
@@ -218,7 +243,8 @@ const AddTaskModal = ({ projectId, onClose, refetchTasks, taskData }: AddTaskMod
               <option value={TaskStatus.COMPLETED}>Completed</option>
             </select>
           </div>
-           {/* Priority (Dropdown) */}
+
+          {/* Priority (Dropdown) */}
           <div className="mb-4">
             <label className="block text-gray-700 font-medium">Priority</label>
             <select
@@ -233,10 +259,6 @@ const AddTaskModal = ({ projectId, onClose, refetchTasks, taskData }: AddTaskMod
               <option value={TaskPriority.URGENT}>Urgent</option>
             </select>
           </div>
-          
-          
-
-          
 
           {/* Start Date */}
           <div className="mb-4">
@@ -244,7 +266,7 @@ const AddTaskModal = ({ projectId, onClose, refetchTasks, taskData }: AddTaskMod
             <input
               type="date"
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-              value={startDate ?? ""}
+              value={startDate?.toISOString().split("T")[0] ?? ""}
               onChange={handleStartDateChange}
             />
           </div>
@@ -255,13 +277,14 @@ const AddTaskModal = ({ projectId, onClose, refetchTasks, taskData }: AddTaskMod
             <input
               type="date"
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-              value={dueDate ?? ""}
-              onChange={(e) => setDueDate(e.target.value)}
-              min={startDate} // Ensure due date cannot be earlier than start date
+              value={dueDate?.toISOString().split("T")[0] ?? ""}
+              onChange={handleDueDateChange}
+              min={startDate?.toISOString().split("T")[0]} // Ensure due date cannot be earlier than start date
               disabled={!startDate} // Disable until start date is selected
             />
           </div>
-           {/* Points (Dropdown) */}
+
+          {/* Points (Dropdown) */}
           <div className="mb-4">
             <label className="block text-gray-700 font-medium">Points</label>
             <select

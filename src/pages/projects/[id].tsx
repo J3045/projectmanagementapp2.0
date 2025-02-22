@@ -1,3 +1,4 @@
+import { GetServerSideProps } from "next";
 import { useState, useEffect, useMemo } from "react";
 import { useParams } from "next/navigation";
 import { api } from "~/utils/api";
@@ -6,7 +7,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { FaEdit, FaTrash, FaPlus } from "react-icons/fa";
 import dynamic from "next/dynamic";
 import { TaskStatus, TaskPriority } from "@prisma/client";
-import { GetServerSideProps } from "next";
+
+// import { Task } from "../../utils/types";
 import { db } from "~/server/db";
 
 const AddTaskModal = dynamic(() => import("~/components/AddTaskModal"), { ssr: false });
@@ -18,23 +20,20 @@ type Task = {
   status: TaskStatus;
   priority: TaskPriority;
   tags?: string;
-  startDate?: string | null; // Updated to string
-  dueDate?: string | null; // Updated to string
+  startDate?: string | null; // Updated to string | null
+  dueDate?: string | null; // Updated to string | null
   points?: number;
-  assignedUsers: { 
-    id: string; 
-    name: string | null; 
-  }[];
+  assignedUsers: { id: string; name: string | null }[];
 };
 
-type ProjectPageProps = {
+interface ProjectPageProps {
   project: {
     id: number;
     name: string;
-    description: string | null;
+    description?: string | null;
   };
-  tasks: Task[];
-};
+  tasks: Task[]; // This now uses the updated Task type
+}
 
 const statusMapping: Record<TaskStatus, string> = {
   TO_DO: "To Do",
@@ -52,11 +51,22 @@ const priorityMapping: Record<TaskPriority, string> = {
 
 const statuses: TaskStatus[] = ["TO_DO", "IN_PROGRESS", "IN_REVIEW", "COMPLETED"];
 
+interface ProjectPageProps {
+  project: {
+    id: number;
+    name: string;
+    description?: string | null;
+  };
+  tasks: Task[];
+}
+
 export const getServerSideProps: GetServerSideProps<ProjectPageProps> = async (context) => {
   const { id } = context.params as { id: string };
+  const projectId = Number(id);
 
+  // Fetch project and tasks from the database
   const project = await db.project.findUnique({
-    where: { id: Number(id) },
+    where: { id: projectId },
     include: {
       tasks: {
         include: {
@@ -77,21 +87,18 @@ export const getServerSideProps: GetServerSideProps<ProjectPageProps> = async (c
     };
   }
 
-  // Convert Date objects to strings
+  // Map tasks to match the Task type and convert Date objects to strings
   const tasks = project.tasks.map((task) => ({
     id: task.id,
     title: task.title,
     description: task.description ?? undefined,
-    status: task.status ?? 'TO_DO',
-    priority: task.priority ?? 'LOW',
+    status: task.status ?? "TO_DO",
+    priority: task.priority ?? "LOW",
     tags: task.tags ?? undefined,
-    startDate: task.startDate?.toISOString() ?? null, // Convert Date to string
-    dueDate: task.dueDate?.toISOString() ?? null, // Convert Date to string
+    startDate: task.startDate ? task.startDate.toISOString() : null, // Convert to ISO string
+    dueDate: task.dueDate ? task.dueDate.toISOString() : null, // Convert to ISO string
     points: task.points ?? undefined,
-    assignedUsers: task.assignedUsers.map(({ id, name }) => ({
-      id,
-      name,
-    })),
+    assignedUsers: task.assignedUsers.map(({ id, name }) => ({ id, name })),
   }));
 
   return {
@@ -100,56 +107,95 @@ export const getServerSideProps: GetServerSideProps<ProjectPageProps> = async (c
         id: project.id,
         name: project.name,
         description: project.description,
-        tasks, // Include tasks in the project
       },
       tasks,
     },
   };
 };
-
-const ProjectPage = ({ project: initialProject, tasks: initialTasks }: ProjectPageProps) => {
-  const params = useParams();
-  const id = Array.isArray(params?.id) ? params.id[0] : params?.id;
-  const projectId = id ? Number(id) : null;
+const ProjectPage = ({ project, tasks: initialTasks }: ProjectPageProps) => {
   const [tasks, setTasks] = useState<Task[]>(initialTasks);
   const [error, setError] = useState<string | null>(null);
   const [showAddTaskModal, setShowAddTaskModal] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const params = useParams();
+  const projectId = params?.id ? Number(params.id) : null;
 
-  const projectQuery = api.project.getProjectById.useQuery(
-    { id: projectId ?? 0 },
-    { enabled: !!projectId, initialData: initialProject }
+  // Use the `useQuery` hook with conditional enabling
+  const { data: fetchedTasks, refetch } = api.task.getTasksByProject.useQuery(
+    projectId!, // Use non-null assertion here (if you're sure projectId is not null when enabled)
+    {
+      enabled: !!projectId, // Only enable the query if projectId is not null
+    }
   );
-
-  const tasksQuery = api.task.getTasksByProject.useQuery(projectId ?? 0, {
-    enabled: !!projectId,
-    initialData: initialTasks,
-  });
-
-  if (!projectQuery.data) {
-    return (
-      <Layout>
-        <div className="flex justify-center items-center h-screen">
-          <div className="text-gray-600">Project not found</div>
-        </div>
-      </Layout>
-    );
-  }
-
-  const project = projectQuery.data;
 
   const updateTaskStatusMutation = api.task.updateTaskStatus.useMutation();
   const deleteTaskMutation = api.task.deleteTask.useMutation();
 
+  // Refetch tasks after a mutation
+  const refetchTasks = async () => {
+    if (!projectId) {
+      setError("Invalid project ID");
+      return;
+    }
+
+    try {
+      await refetch(); // Use the `refetch` method from `useQuery`
+      if (fetchedTasks) {
+        // Map the data to the Task type
+        const mappedTasks = fetchedTasks.map((task) => ({
+          id: task.id,
+          title: task.title,
+          description: task.description ?? undefined,
+          status: task.status ?? "TO_DO",
+          priority: task.priority ?? "LOW",
+          tags: task.tags ?? undefined,
+          startDate: task.startDate ? task.startDate.toISOString() : null,
+          dueDate: task.dueDate ? task.dueDate.toISOString() : null,
+          points: task.points ?? undefined,
+          assignedUsers: task.assignedUsers.map(({ id, name }) => ({ id, name })),
+        }));
+        setTasks(mappedTasks);
+      } else {
+        console.error("Unexpected response format:", fetchedTasks);
+        setError("Failed to refetch tasks.");
+      }
+    } catch (error) {
+      console.error("Error refetching tasks:", error);
+      setError("Failed to refetch tasks.");
+    }
+  };
+
+  // Reset tasks when projectId changes
   useEffect(() => {
-    if (tasksQuery.data) {
-      setTasks(tasksQuery.data);
+    setTasks(initialTasks);
+  }, [projectId, initialTasks]);
+
+  // Update tasks when fetchedTasks changes
+  useEffect(() => {
+    if (fetchedTasks) {
+      const mappedTasks = fetchedTasks.map((task) => ({
+        id: task.id,
+        title: task.title,
+        description: task.description ?? undefined,
+        status: task.status ?? "TO_DO",
+        priority: task.priority ?? "LOW",
+        tags: task.tags ?? undefined,
+        startDate: task.startDate ? task.startDate.toISOString() : null,
+        dueDate: task.dueDate ? task.dueDate.toISOString() : null,
+        points: task.points ?? undefined,
+        assignedUsers: task.assignedUsers.map(({ id, name }) => ({ id, name })),
+      }));
+      setTasks(mappedTasks);
     }
-    if (projectQuery.error || tasksQuery.error) {
-      setError("Error loading project or tasks");
-    }
-  }, [tasksQuery.data, projectQuery.error, tasksQuery.error]);
+  }, [fetchedTasks]);
+
+  // Rest of your component code...
+
+  // Rest of your component code...
+  // Reset tasks when projectId changes
+  useEffect(() => {
+    setTasks(initialTasks);
+  }, [projectId, initialTasks]);
 
   const groupedTasks = useMemo(
     () =>
@@ -191,11 +237,7 @@ const ProjectPage = ({ project: initialProject, tasks: initialTasks }: ProjectPa
   };
 
   const handleEditTask = (task: Task) => {
-    setSelectedTask({
-      ...task,
-      startDate: task.startDate ? new Date(task.startDate) : null,
-      dueDate: task.dueDate ? new Date(task.dueDate) : null,
-    });
+    setSelectedTask(task);
     setShowAddTaskModal(true);
   };
 
@@ -342,13 +384,12 @@ const ProjectPage = ({ project: initialProject, tasks: initialTasks }: ProjectPa
 
       {showAddTaskModal && (
         <AddTaskModal
-          projectId={Number(id)}
+          projectId={project.id}
           onClose={() => {
             setShowAddTaskModal(false);
             setSelectedTask(null);
-            tasksQuery.refetch();
           }}
-          refetchTasks={tasksQuery.refetch}
+          refetchTasks={refetchTasks} // Pass the refetch function
           taskData={selectedTask}
         />
       )}
